@@ -17,6 +17,10 @@ type User struct {
 	Name string `json:"name"`
 }
 
+type UpdateUser struct {
+	Name string `json:"name"`
+}
+
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
@@ -36,6 +40,64 @@ func main() {
 	}, fiber.WithTags("Users"), fiber.WithResponses(
 		openapi.ResponseSpec{Status: http.StatusCreated, Schema: struct{}{}, Description: "Created"},
 		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.GET("/users/:id", func(c *fiberlib.Ctx) error {
+		id := c.Params("id")
+		if id == "404" {
+			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
+	}, fiber.WithTags("Users"), fiber.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.PUT("/users/:id", func(c *fiberlib.Ctx) error {
+		id := c.Params("id")
+		var in UpdateUser
+		if err := c.BodyParser(&in); err != nil {
+			return fiber.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
+		}
+		if id == "404" {
+			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
+	}, fiber.WithTags("Users"), fiber.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
+		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.PATCH("/users/:id", func(c *fiberlib.Ctx) error {
+		id := c.Params("id")
+		var in UpdateUser
+		if err := c.BodyParser(&in); err != nil {
+			return fiber.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
+		}
+		if id == "404" {
+			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
+	}, fiber.WithTags("Users"), fiber.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
+		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.DELETE("/users/:id", func(c *fiberlib.Ctx) error {
+		id := c.Params("id")
+		if id == "404" {
+			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return c.SendStatus(http.StatusNoContent)
+	}, fiber.WithTags("Users"), fiber.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusNoContent, Schema: struct{}{}, Description: "No Content"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
 		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
 	))
 

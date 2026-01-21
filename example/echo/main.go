@@ -17,16 +17,89 @@ type User struct {
 	Name string `json:"name"`
 }
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+type UpdateUser struct {
+	Name string `json:"name"`
+}
+
 func main() {
 	r := echo.New()
 
 	r.GET("/users", func(c echolib.Context) error {
 		return echo.JSON(c, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	}, echo.WithTags("Users"))
+	}, echo.WithTags("Users"), echo.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusOK, Schema: []User{}, Description: "OK"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
 
 	r.POST("/users", func(c echolib.Context) error {
 		return c.NoContent(http.StatusCreated)
-	}, echo.WithTags("Users"))
+	}, echo.WithTags("Users"), echo.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusCreated, Schema: struct{}{}, Description: "Created"},
+		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.GET("/users/:id", func(c echolib.Context) error {
+		id := c.Param("id")
+		if id == "404" {
+			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return echo.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
+	}, echo.WithTags("Users"), echo.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.PUT("/users/:id", func(c echolib.Context) error {
+		id := c.Param("id")
+		var in UpdateUser
+		if err := c.Bind(&in); err != nil {
+			return echo.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
+		}
+		if id == "404" {
+			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return echo.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
+	}, echo.WithTags("Users"), echo.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
+		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.PATCH("/users/:id", func(c echolib.Context) error {
+		id := c.Param("id")
+		var in UpdateUser
+		if err := c.Bind(&in); err != nil {
+			return echo.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
+		}
+		if id == "404" {
+			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return echo.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
+	}, echo.WithTags("Users"), echo.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
+		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
+
+	r.DELETE("/users/:id", func(c echolib.Context) error {
+		id := c.Param("id")
+		if id == "404" {
+			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
+		}
+		return c.NoContent(http.StatusNoContent)
+	}, echo.WithTags("Users"), echo.WithResponses(
+		openapi.ResponseSpec{Status: http.StatusNoContent, Schema: struct{}{}, Description: "No Content"},
+		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
+		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
+	))
 
 	echo.Register(r, openapi.Config{
 		Title:   "User API",
