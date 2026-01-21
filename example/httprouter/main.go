@@ -30,52 +30,39 @@ type CreateUser struct {
 func main() {
 	r := openapi.NewRouter()
 
-	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
-		json.NewEncoder(w).Encode([]User{{ID: "1", Name: "Alice"}})
-	}, openapi.WithTags("Users"), openapi.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: []User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	users := r.Group("", openapi.WithTags("Users"))
 
-	r.GET("/search", func(w http.ResponseWriter, req *http.Request) {
+	users.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
+		json.NewEncoder(w).Encode([]User{{ID: "1", Name: "Alice"}})
+	})
+
+	users.GET("/search", func(w http.ResponseWriter, req *http.Request) {
 		_, _, _ = openapi.QueryValue[int](req, "limit")
 		w.WriteHeader(http.StatusOK)
-	}, openapi.WithTags("Users"), openapi.WithQueryParams(
+	}, openapi.WithQueryParams(
 		openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
 		openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
-	), openapi.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: struct{}{}, Description: "OK"},
 	))
 
-	r.POST("/users", func(w http.ResponseWriter, req *http.Request) {
+	users.POST("/users", func(w http.ResponseWriter, req *http.Request) {
 		var in CreateUser
 		if err := openapi.Bind(req, &in); err != nil {
 			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-	}, openapi.WithTags("Users"), openapi.WithRequestSchema(CreateUser{}), openapi.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusCreated, Schema: struct{}{}, Description: "Created"},
-		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, openapi.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
 
-	// GET /users/{id}
-	r.GET("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	users.GET("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		if id == "404" {
 			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: "Alice"})
-	}, openapi.WithTags("Users"), openapi.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	})
 
-	// PUT /users/{id}
-	r.PUT("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	users.PUT("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		var in UpdateUser
 		if err := openapi.Bind(req, &in); err != nil {
@@ -87,15 +74,9 @@ func main() {
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	}, openapi.WithTags("Users"), openapi.WithRequestSchema(UpdateUser{}), openapi.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, openapi.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
 
-	// PATCH /users/{id}
-	r.PATCH("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	users.PATCH("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		var in UpdateUser
 		if err := openapi.Bind(req, &in); err != nil {
@@ -107,26 +88,16 @@ func main() {
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	}, openapi.WithTags("Users"), openapi.WithRequestSchema(UpdateUser{}), openapi.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, openapi.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
 
-	// DELETE /users/{id}
-	r.DELETE("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	users.DELETE("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		if id == "404" {
 			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
-	}, openapi.WithTags("Users"), openapi.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusNoContent, Schema: struct{}{}, Description: "No Content"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, openapi.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
 
 	openapi.Register(r, openapi.Config{
 		Title:   "User API",

@@ -36,10 +36,7 @@ func main() {
 
 	users.GET("/users", func(c *ginlib.Context) {
 		gin.JSON(c, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	}, gin.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: []User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	})
 
 	users.GET("/search", func(c *ginlib.Context) {
 		_ = c.Query("q")
@@ -58,11 +55,7 @@ func main() {
 			return
 		}
 		c.Status(http.StatusCreated)
-	}, gin.WithRequestSchema(CreateUser{}), gin.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusCreated, Schema: struct{}{}, Description: "Created"},
-		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, gin.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
 
 	users.GET("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
@@ -71,11 +64,7 @@ func main() {
 			return
 		}
 		gin.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
-	}, gin.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	})
 
 	users.PUT("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
@@ -89,12 +78,7 @@ func main() {
 			return
 		}
 		gin.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, gin.WithRequestSchema(UpdateUser{}), gin.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, gin.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
 
 	users.PATCH("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
@@ -108,12 +92,7 @@ func main() {
 			return
 		}
 		gin.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, gin.WithRequestSchema(UpdateUser{}), gin.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusOK, Schema: User{}, Description: "OK"},
-		openapi.ResponseSpec{Status: http.StatusBadRequest, Schema: ErrorResponse{}, Description: "Bad Request"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, gin.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
 
 	users.DELETE("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
@@ -122,11 +101,7 @@ func main() {
 			return
 		}
 		c.Status(http.StatusNoContent)
-	}, gin.WithResponses(
-		openapi.ResponseSpec{Status: http.StatusNoContent, Schema: struct{}{}, Description: "No Content"},
-		openapi.ResponseSpec{Status: http.StatusNotFound, Schema: ErrorResponse{}, Description: "Not Found"},
-		openapi.ResponseSpec{Status: http.StatusInternalServerError, Schema: ErrorResponse{}, Description: "Internal Server Error"},
-	))
+	}, gin.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
 
 	gin.Register(r, openapi.Config{
 		Title:   "User API",

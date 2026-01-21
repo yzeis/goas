@@ -2,7 +2,7 @@ package openapi
 
 import "net/http"
 
-// JSONRouteSpec is a convenience for common JSON APIs.
+// JSONRoute JSONRouteSpec is a convenience for common JSON APIs.
 // It wires request/response schemas + a primary success status code.
 //
 // You still can override everything by passing explicit options.
