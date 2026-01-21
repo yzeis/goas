@@ -5,6 +5,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	echolib "github.com/labstack/echo/v4"
 
 	"github.com/aizacoders/openapigo/adapters/echo"
@@ -21,12 +22,18 @@ func main() {
 
 	r.GET("/users", func(c echolib.Context) error {
 		return echo.JSON(c, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	})
+	}, echo.WithTags("Users"))
 
 	r.POST("/users", func(c echolib.Context) error {
 		return c.NoContent(http.StatusCreated)
-	})
+	}, echo.WithTags("Users"))
 
-	echo.Register(r, openapi.Config{Title: "User API", Version: "1.0.0"})
+	echo.Register(r, openapi.Config{
+		Title:   "User API",
+		Version: "1.0.0",
+		Tags: openapi3.Tags{
+			{Name: "Users", Description: "User management endpoints"},
+		},
+	})
 	_ = r.Echo.Start(":8080")
 }

@@ -26,6 +26,7 @@ type Config struct {
 	Title           string
 	Version         string
 	SecuritySchemes map[string]*openapi3.SecuritySchemeRef
+	Tags            openapi3.Tags
 	SpecPath        string
 	SwaggerPath     string
 }

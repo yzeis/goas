@@ -14,6 +14,7 @@ type RouteMeta struct {
 	Handler        http.HandlerFunc
 	Summary        string
 	Description    string
+	Tags           []string
 	RequestSchema  interface{}
 	ResponseSchema interface{}
 	Security       *openapi3.SecurityRequirement
@@ -49,6 +50,12 @@ func WithResponseSchema(schema interface{}) HandlerOption {
 func WithSecurity(security *openapi3.SecurityRequirement) HandlerOption {
 	return func(meta *RouteMeta) {
 		meta.Security = security
+	}
+}
+
+func WithTags(tags ...string) HandlerOption {
+	return func(meta *RouteMeta) {
+		meta.Tags = append(meta.Tags, tags...)
 	}
 }
 

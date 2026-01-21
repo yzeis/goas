@@ -5,6 +5,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	fiberlib "github.com/gofiber/fiber/v2"
 
 	"github.com/aizacoders/openapigo/adapters/fiber"
@@ -21,12 +22,18 @@ func main() {
 
 	r.GET("/users", func(c *fiberlib.Ctx) error {
 		return fiber.JSON(c, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	})
+	}, fiber.WithTags("Users"))
 
 	r.POST("/users", func(c *fiberlib.Ctx) error {
 		return c.SendStatus(http.StatusCreated)
-	})
+	}, fiber.WithTags("Users"))
 
-	fiber.Register(r, openapi.Config{Title: "User API", Version: "1.0.0"})
+	fiber.Register(r, openapi.Config{
+		Title:   "User API",
+		Version: "1.0.0",
+		Tags: openapi3.Tags{
+			{Name: "Users", Description: "User management endpoints"},
+		},
+	})
 	_ = r.App.Listen(":8080")
 }

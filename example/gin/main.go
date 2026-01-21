@@ -5,6 +5,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	ginlib "github.com/gin-gonic/gin"
 
 	"github.com/aizacoders/openapigo/adapters/gin"
@@ -21,12 +22,18 @@ func main() {
 
 	r.GET("/users", func(c *ginlib.Context) {
 		gin.JSON(c, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	})
+	}, gin.WithTags("Users"))
 
 	r.POST("/users", func(c *ginlib.Context) {
 		c.Status(http.StatusCreated)
-	})
+	}, gin.WithTags("Users"))
 
-	gin.Register(r, openapi.Config{Title: "User API", Version: "1.0.0"})
+	gin.Register(r, openapi.Config{
+		Title:   "User API",
+		Version: "1.0.0",
+		Tags: openapi3.Tags{
+			{Name: "Users", Description: "User management endpoints"},
+		},
+	})
 	_ = r.Engine.Run(":8080")
 }

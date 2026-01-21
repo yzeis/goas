@@ -17,6 +17,7 @@ func BuildSpec(routes []RouteMeta, cfg Config) *openapi3.T {
 			Title:   cfg.Title,
 			Version: cfg.Version,
 		},
+		Tags:  cfg.Tags,
 		Paths: openapi3.NewPaths(),
 		Components: &openapi3.Components{
 			Schemas:         map[string]*openapi3.SchemaRef{},
@@ -37,6 +38,9 @@ func BuildSpec(routes []RouteMeta, cfg Config) *openapi3.T {
 			Summary:     firstNonEmpty(route.Summary, route.Path),
 			Description: route.Description,
 			Responses:   &openapi3.Responses{},
+		}
+		if len(route.Tags) > 0 {
+			op.Tags = append(op.Tags, route.Tags...)
 		}
 
 		// Path parameters
@@ -85,7 +89,11 @@ func BuildSpec(routes []RouteMeta, cfg Config) *openapi3.T {
 			op.Security = &openapi3.SecurityRequirements{*route.Security}
 		}
 
-		item := &openapi3.PathItem{}
+		// Reuse PathItem if this path already exists, so we don't overwrite other methods.
+		item := doc.Paths.Find(path)
+		if item == nil {
+			item = &openapi3.PathItem{}
+		}
 		switch route.Method {
 		case http.MethodGet:
 			item.Get = op

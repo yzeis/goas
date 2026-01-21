@@ -27,6 +27,7 @@ var (
 	WithRequestSchema  = openapi.WithRequestSchema
 	WithResponseSchema = openapi.WithResponseSchema
 	WithSecurity       = openapi.WithSecurity
+	WithTags           = openapi.WithTags
 )
 
 func (r *Router) Handle(method, path string, h fiberlib.Handler, opts ...HandlerOption) {

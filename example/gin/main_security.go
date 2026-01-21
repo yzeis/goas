@@ -24,6 +24,9 @@ func main() {
 	cfg := openapi.Config{
 		Title:   "User API (Gin + Security)",
 		Version: "1.0.0",
+		Tags: openapi3.Tags{
+			{Name: "Secure Users", Description: "Secured endpoints (Bearer / X-API-Key)"},
+		},
 		SecuritySchemes: map[string]*openapi3.SecuritySchemeRef{
 			"bearerAuth": {Value: &openapi3.SecurityScheme{Type: "http", Scheme: "bearer", BearerFormat: "JWT"}},
 			"apiKeyAuth": {Value: &openapi3.SecurityScheme{Type: "apiKey", In: "header", Name: "X-API-Key"}},
@@ -40,7 +43,7 @@ func main() {
 			return
 		}
 		gin.JSON(c, http.StatusOK, []SecUser{{ID: "1", Name: "Alice"}})
-	}, gin.WithSecurity(&bearer))
+	}, gin.WithSecurity(&bearer), gin.WithTags("Secure Users"))
 
 	r.POST("/secure/users", func(c *ginlib.Context) {
 		if c.GetHeader("X-API-Key") == "" {
@@ -48,7 +51,7 @@ func main() {
 			return
 		}
 		c.Status(http.StatusCreated)
-	}, gin.WithSecurity(&apiKey))
+	}, gin.WithSecurity(&apiKey), gin.WithTags("Secure Users"))
 
 	gin.Register(r, cfg)
 	_ = r.Engine.Run(":8080")

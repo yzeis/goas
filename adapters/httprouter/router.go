@@ -21,6 +21,7 @@ var (
 	WithRequestSchema  = openapi.WithRequestSchema
 	WithResponseSchema = openapi.WithResponseSchema
 	WithSecurity       = openapi.WithSecurity
+	WithTags           = openapi.WithTags
 )
 
 // Re-export helpers.

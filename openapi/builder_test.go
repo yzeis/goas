@@ -202,3 +202,61 @@ func TestQueryParamsInSpec(t *testing.T) {
 		t.Fatalf("missing query params in spec: q=%v limit=%v", foundQ, foundLimit)
 	}
 }
+
+func TestMultipleMethodsSamePath(t *testing.T) {
+	r := NewRouter()
+
+	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	r.POST("/users", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	doc := BuildSpec(r.Routes(), Config{Title: "T", Version: "1"})
+	p := doc.Paths.Find("/users")
+	if p == nil {
+		t.Fatalf("expected /users path")
+	}
+	if p.Get == nil {
+		t.Fatalf("expected GET /users")
+	}
+	if p.Post == nil {
+		t.Fatalf("expected POST /users")
+	}
+}
+
+func TestOperationTags(t *testing.T) {
+	r := NewRouter()
+	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}, WithTags("Users"))
+
+	doc := BuildSpec(r.Routes(), Config{Title: "T", Version: "1"})
+	p := doc.Paths.Find("/users")
+	if p == nil || p.Get == nil {
+		t.Fatalf("expected GET /users")
+	}
+	if len(p.Get.Tags) != 1 || p.Get.Tags[0] != "Users" {
+		t.Fatalf("expected tag Users, got %#v", p.Get.Tags)
+	}
+}
+
+func TestTopLevelTagsFromConfig(t *testing.T) {
+	r := NewRouter()
+	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}, WithTags("Users"))
+
+	doc := BuildSpec(r.Routes(), Config{
+		Title:   "T",
+		Version: "1",
+		Tags: openapi3.Tags{
+			{Name: "Users", Description: "User management endpoints"},
+		},
+	})
+
+	if len(doc.Tags) != 1 || doc.Tags[0].Name != "Users" {
+		t.Fatalf("expected top-level tags to contain Users, got %#v", doc.Tags)
+	}
+}
