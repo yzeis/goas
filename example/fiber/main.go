@@ -46,13 +46,13 @@ func main() {
 		openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
 	))
 
-	users.POST("/users", func(c *fiberlib.Ctx) error {
+	users.POSTJSON("/users", func(c *fiberlib.Ctx) error {
 		var in CreateUser
 		if err := c.BodyParser(&in); err != nil {
 			return fiber.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
 		}
 		return c.SendStatus(http.StatusCreated)
-	}, fiber.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	}, CreateUser{}, struct{}{}, http.StatusCreated)
 
 	users.GET("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
@@ -62,7 +62,7 @@ func main() {
 		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
 	})
 
-	users.PUT("/users/:id", func(c *fiberlib.Ctx) error {
+	users.PUTJSON("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
 		var in UpdateUser
 		if err := c.BodyParser(&in); err != nil {
@@ -72,9 +72,9 @@ func main() {
 			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, fiber.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.PATCH("/users/:id", func(c *fiberlib.Ctx) error {
+	users.PATCHJSON("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
 		var in UpdateUser
 		if err := c.BodyParser(&in); err != nil {
@@ -84,15 +84,15 @@ func main() {
 			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, fiber.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.DELETE("/users/:id", func(c *fiberlib.Ctx) error {
+	users.DELETEJSON("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
 		if id == "404" {
 			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return c.SendStatus(http.StatusNoContent)
-	}, fiber.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	}, struct{}{}, http.StatusNoContent)
 
 	fiber.Register(r, openapi.Config{
 		Title:   "User API",

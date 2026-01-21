@@ -48,14 +48,14 @@ func main() {
 		openapi.ResponseSpec{Status: http.StatusOK, Schema: struct{}{}, Description: "OK"},
 	))
 
-	users.POST("/users", func(c *ginlib.Context) {
+	users.POSTJSON("/users", func(c *ginlib.Context) {
 		var in CreateUser
 		if err := c.ShouldBindJSON(&in); err != nil {
 			gin.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
 			return
 		}
 		c.Status(http.StatusCreated)
-	}, gin.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	}, CreateUser{}, struct{}{}, http.StatusCreated)
 
 	users.GET("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
@@ -66,7 +66,7 @@ func main() {
 		gin.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
 	})
 
-	users.PUT("/users/:id", func(c *ginlib.Context) {
+	users.PUTJSON("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
 		var in UpdateUser
 		if err := c.ShouldBindJSON(&in); err != nil {
@@ -78,9 +78,9 @@ func main() {
 			return
 		}
 		gin.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, gin.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.PATCH("/users/:id", func(c *ginlib.Context) {
+	users.PATCHJSON("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
 		var in UpdateUser
 		if err := c.ShouldBindJSON(&in); err != nil {
@@ -92,16 +92,16 @@ func main() {
 			return
 		}
 		gin.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, gin.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.DELETE("/users/:id", func(c *ginlib.Context) {
+	users.DELETEJSON("/users/:id", func(c *ginlib.Context) {
 		id := c.Param("id")
 		if id == "404" {
 			gin.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 			return
 		}
 		c.Status(http.StatusNoContent)
-	}, gin.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	}, struct{}{}, http.StatusNoContent)
 
 	gin.Register(r, openapi.Config{
 		Title:   "User API",

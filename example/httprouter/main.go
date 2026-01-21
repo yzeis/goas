@@ -44,14 +44,14 @@ func main() {
 		openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
 	))
 
-	users.POST("/users", func(w http.ResponseWriter, req *http.Request) {
+	users.POSTJSON("/users", func(w http.ResponseWriter, req *http.Request) {
 		var in CreateUser
 		if err := openapi.Bind(req, &in); err != nil {
 			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-	}, openapi.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	}, CreateUser{}, struct{}{}, http.StatusCreated)
 
 	users.GET("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
@@ -62,7 +62,7 @@ func main() {
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: "Alice"})
 	})
 
-	users.PUT("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	users.PUTJSON("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		var in UpdateUser
 		if err := openapi.Bind(req, &in); err != nil {
@@ -74,9 +74,9 @@ func main() {
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	}, openapi.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.PATCH("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	users.PATCHJSON("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		var in UpdateUser
 		if err := openapi.Bind(req, &in); err != nil {
@@ -88,16 +88,16 @@ func main() {
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	}, openapi.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.DELETE("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	users.DELETEJSON("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		if id == "404" {
 			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
-	}, openapi.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	}, struct{}{}, http.StatusNoContent)
 
 	openapi.Register(r, openapi.Config{
 		Title:   "User API",
