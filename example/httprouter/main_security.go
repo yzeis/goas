@@ -23,6 +23,9 @@ func main() {
 	cfg := openapi.Config{
 		Title:   "User API (Security)",
 		Version: "1.0.0",
+		Tags: openapi3.Tags{
+			{Name: "Secure Users", Description: "Secured endpoints (Bearer / X-API-Key)"},
+		},
 		SecuritySchemes: map[string]*openapi3.SecuritySchemeRef{
 			"bearerAuth": {Value: &openapi3.SecurityScheme{Type: "http", Scheme: "bearer", BearerFormat: "JWT"}},
 			"apiKeyAuth": {Value: &openapi3.SecurityScheme{Type: "apiKey", In: "header", Name: "X-API-Key"}},
@@ -32,8 +35,10 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
+	secure := r.Group("", openapi.WithTags("Secure Users"))
+
 	// Bearer-protected endpoint
-	r.GET("/secure/users", func(w http.ResponseWriter, req *http.Request) {
+	secure.GET("/secure/users", func(w http.ResponseWriter, req *http.Request) {
 		auth := req.Header.Get("Authorization")
 		if !strings.HasPrefix(auth, "Bearer ") {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -43,13 +48,14 @@ func main() {
 	}, openapi.WithSecurity(&bearer))
 
 	// API-key-protected endpoint
-	r.POST("/secure/users", func(w http.ResponseWriter, req *http.Request) {
+	apiKeyPostOpts := append([]openapi.HandlerOption{openapi.WithSecurity(&apiKey)}, openapi.JSONRoute(nil, struct{}{}, http.StatusCreated)...)
+	secure.POST("/secure/users", func(w http.ResponseWriter, req *http.Request) {
 		if req.Header.Get("X-API-Key") == "" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-	}, openapi.WithSecurity(&apiKey))
+	}, apiKeyPostOpts...)
 
 	openapi.Register(r, cfg)
 	_ = http.ListenAndServe(":8080", r)

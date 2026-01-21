@@ -33,7 +33,9 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
-	r.GET("/secure/users", func(c *fiberlib.Ctx) error {
+	secure := r.Group("", fiber.WithTags("Secure Users"))
+
+	secure.GET("/secure/users", func(c *fiberlib.Ctx) error {
 		auth := c.Get("Authorization")
 		if !strings.HasPrefix(auth, "Bearer ") {
 			return c.SendStatus(http.StatusUnauthorized)
@@ -41,12 +43,12 @@ func main() {
 		return fiber.JSON(c, http.StatusOK, []SecUser{{ID: "1", Name: "Alice"}})
 	}, fiber.WithSecurity(&bearer))
 
-	r.POST("/secure/users", func(c *fiberlib.Ctx) error {
+	secure.POST("/secure/users", func(c *fiberlib.Ctx) error {
 		if c.Get("X-API-Key") == "" {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
 		return c.SendStatus(http.StatusCreated)
-	}, fiber.WithSecurity(&apiKey))
+	}, fiber.WithSecurity(&apiKey), fiber.JSONRoute(nil, struct{}{}, http.StatusCreated)...)
 
 	fiber.Register(r, cfg)
 	_ = r.App.Listen(":8080")

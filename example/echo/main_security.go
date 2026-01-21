@@ -33,22 +33,24 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
+	secure := r.Group("", echo.WithTags("Secure Users"))
+
 	// Basic handler + Bearer security documented in OpenAPI
-	r.GET("/secure/users", func(c echolib.Context) error {
+	secure.GET("/secure/users", func(c echolib.Context) error {
 		auth := c.Request().Header.Get("Authorization")
 		if !strings.HasPrefix(auth, "Bearer ") {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return echo.JSON(c, http.StatusOK, []SecUser{{ID: "1", Name: "Alice"}})
-	}, func(meta *openapi.RouteMeta) { echo.WithSecurity(&bearer)(meta) })
+	}, echo.WithSecurity(&bearer))
 
 	// Basic handler + API key security documented in OpenAPI
-	r.POST("/secure/users", func(c echolib.Context) error {
+	secure.POST("/secure/users", func(c echolib.Context) error {
 		if c.Request().Header.Get("X-API-Key") == "" {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return c.NoContent(http.StatusCreated)
-	}, func(meta *openapi.RouteMeta) { echo.WithSecurity(&apiKey)(meta) })
+	}, echo.WithSecurity(&apiKey), echo.JSONRoute(nil, struct{}{}, http.StatusCreated)...)
 
 	echo.Register(r, cfg)
 	_ = r.Echo.Start(":8080")

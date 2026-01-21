@@ -36,22 +36,24 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
-	r.GET("/secure/users", func(c *ginlib.Context) {
+	secure := r.Group("", gin.WithTags("Secure Users"))
+
+	secure.GET("/secure/users", func(c *ginlib.Context) {
 		auth := c.GetHeader("Authorization")
 		if !strings.HasPrefix(auth, "Bearer ") {
 			c.Status(http.StatusUnauthorized)
 			return
 		}
 		gin.JSON(c, http.StatusOK, []SecUser{{ID: "1", Name: "Alice"}})
-	}, gin.WithSecurity(&bearer), gin.WithTags("Secure Users"))
+	}, gin.WithSecurity(&bearer))
 
-	r.POST("/secure/users", func(c *ginlib.Context) {
+	secure.POST("/secure/users", func(c *ginlib.Context) {
 		if c.GetHeader("X-API-Key") == "" {
 			c.Status(http.StatusUnauthorized)
 			return
 		}
 		c.Status(http.StatusCreated)
-	}, gin.WithSecurity(&apiKey), gin.WithTags("Secure Users"))
+	}, gin.WithSecurity(&apiKey), gin.JSONRoute(nil, struct{}{}, http.StatusCreated)...)
 
 	gin.Register(r, cfg)
 	_ = r.Engine.Run(":8080")
