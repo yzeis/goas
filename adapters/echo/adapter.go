@@ -219,6 +219,53 @@ func DELETET[TReq any, TRes any](r *Router, path string, h TypedHandler[TReq, TR
 	r.Handle(http.MethodDelete, path, wrapTyped(h), mergeOpts(base, opts...)...)
 }
 
+// JSON wrappers
+func (r *Router) GETJSON(path string, h echolib.HandlerFunc, resSchema any, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, http.StatusOK), opts)
+	r.GET(path, h, all...)
+}
+
+func (r *Router) POSTJSON(path string, h echolib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	r.POST(path, h, all...)
+}
+
+func (r *Router) PUTJSON(path string, h echolib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	r.PUT(path, h, all...)
+}
+
+func (r *Router) PATCHJSON(path string, h echolib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	r.PATCH(path, h, all...)
+}
+
+func (r *Router) DELETEJSON(path string, h echolib.HandlerFunc, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, successStatus), opts)
+	r.DELETE(path, h, all...)
+}
+
+func (g *Group) GETJSON(p string, h echolib.HandlerFunc, resSchema any, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, http.StatusOK), opts)
+	g.GET(p, h, all...)
+}
+func (g *Group) POSTJSON(p string, h echolib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	g.POST(p, h, all...)
+}
+func (g *Group) PUTJSON(p string, h echolib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	g.PUT(p, h, all...)
+}
+func (g *Group) PATCHJSON(p string, h echolib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	g.PATCH(p, h, all...)
+}
+func (g *Group) DELETEJSON(p string, h echolib.HandlerFunc, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, successStatus), opts)
+	g.DELETE(p, h, all...)
+}
+
 // Group allows applying shared options (e.g., tags/security) and a common path prefix.
 type Group struct {
 	prefix string

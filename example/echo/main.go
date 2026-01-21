@@ -45,14 +45,13 @@ func main() {
 		openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
 		openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
 	))
-
-	users.POST("/users", func(c echolib.Context) error {
+	users.POSTJSON("/users", func(c echolib.Context) error {
 		var in CreateUser
 		if err := c.Bind(&in); err != nil {
 			return echo.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
 		}
 		return c.NoContent(http.StatusCreated)
-	}, echo.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	}, CreateUser{}, struct{}{}, http.StatusCreated)
 
 	users.GET("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
@@ -62,7 +61,7 @@ func main() {
 		return echo.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
 	})
 
-	users.PUT("/users/:id", func(c echolib.Context) error {
+	users.PUTJSON("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
 		var in UpdateUser
 		if err := c.Bind(&in); err != nil {
@@ -72,9 +71,9 @@ func main() {
 			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return echo.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, echo.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.PATCH("/users/:id", func(c echolib.Context) error {
+	users.PATCHJSON("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
 		var in UpdateUser
 		if err := c.Bind(&in); err != nil {
@@ -84,15 +83,15 @@ func main() {
 			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return echo.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, echo.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	}, UpdateUser{}, User{}, http.StatusOK)
 
-	users.DELETE("/users/:id", func(c echolib.Context) error {
+	users.DELETEJSON("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
 		if id == "404" {
 			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return c.NoContent(http.StatusNoContent)
-	}, echo.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	}, struct{}{}, http.StatusNoContent)
 
 	echo.Register(r, openapi.Config{
 		Title:   "User API",

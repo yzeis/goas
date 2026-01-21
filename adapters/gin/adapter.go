@@ -233,53 +233,49 @@ func DELETET[TReq any, TRes any](r *Router, path string, h TypedHandler[TReq, TR
 	r.Handle(http.MethodDelete, path, wrapTyped(h), mergeOpts(base, opts...)...)
 }
 
-// Group allows applying shared options (e.g., tags/security) and a common path prefix.
-type Group struct {
-	prefix string
-	opts   []HandlerOption
-	r      *Router
+// JSON wrappers
+func (r *Router) GETJSON(path string, h ginlib.HandlerFunc, resSchema any, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, http.StatusOK), opts)
+	r.GET(path, h, all...)
 }
 
-func (r *Router) Group(prefix string, opts ...HandlerOption) *Group {
-	return &Group{prefix: prefix, opts: opts, r: r}
+func (r *Router) POSTJSON(path string, h ginlib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	r.POST(path, h, all...)
 }
 
-func (g *Group) Handle(method, p string, h ginlib.HandlerFunc, opts ...HandlerOption) {
-	all := make([]HandlerOption, 0, len(g.opts)+len(opts))
-	all = append(all, g.opts...)
-	all = append(all, opts...)
-	g.r.Handle(method, joinPaths(g.prefix, p), h, all...)
+func (r *Router) PUTJSON(path string, h ginlib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	r.PUT(path, h, all...)
 }
 
-func (g *Group) GET(p string, h ginlib.HandlerFunc, opts ...HandlerOption) {
-	g.Handle(http.MethodGet, p, h, opts...)
-}
-func (g *Group) POST(p string, h ginlib.HandlerFunc, opts ...HandlerOption) {
-	g.Handle(http.MethodPost, p, h, opts...)
-}
-func (g *Group) PUT(p string, h ginlib.HandlerFunc, opts ...HandlerOption) {
-	g.Handle(http.MethodPut, p, h, opts...)
-}
-func (g *Group) PATCH(p string, h ginlib.HandlerFunc, opts ...HandlerOption) {
-	g.Handle(http.MethodPatch, p, h, opts...)
-}
-func (g *Group) DELETE(p string, h ginlib.HandlerFunc, opts ...HandlerOption) {
-	g.Handle(http.MethodDelete, p, h, opts...)
+func (r *Router) PATCHJSON(path string, h ginlib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	r.PATCH(path, h, all...)
 }
 
-func joinPaths(prefix, p string) string {
-	if prefix == "" {
-		return p
-	}
-	if p == "" {
-		return prefix
-	}
-	// ensure single slash between
-	if strings.HasSuffix(prefix, "/") {
-		prefix = strings.TrimSuffix(prefix, "/")
-	}
-	if !strings.HasPrefix(p, "/") {
-		p = "/" + p
-	}
-	return prefix + p
+func (r *Router) DELETEJSON(path string, h ginlib.HandlerFunc, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, successStatus), opts)
+	r.DELETE(path, h, all...)
+}
+
+func (g *Group) GETJSON(p string, h ginlib.HandlerFunc, resSchema any, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, http.StatusOK), opts)
+	g.GET(p, h, all...)
+}
+func (g *Group) POSTJSON(p string, h ginlib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	g.POST(p, h, all...)
+}
+func (g *Group) PUTJSON(p string, h ginlib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	g.PUT(p, h, all...)
+}
+func (g *Group) PATCHJSON(p string, h ginlib.HandlerFunc, reqSchema any, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(reqSchema, resSchema, successStatus), opts)
+	g.PATCH(p, h, all...)
+}
+func (g *Group) DELETEJSON(p string, h ginlib.HandlerFunc, resSchema any, successStatus int, opts ...HandlerOption) {
+	all := openapi.MergeOptionSlices(openapi.JSONRoute(nil, resSchema, successStatus), opts)
+	g.DELETE(p, h, all...)
 }
