@@ -11,6 +11,7 @@ import (
 
 	"github.com/aizacoders/openapigo/adapters/echo"
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 type SecUser struct {
@@ -19,7 +20,7 @@ type SecUser struct {
 }
 
 func main() {
-	r := echo.New()
+	base := echo.New()
 
 	cfg := openapi.Config{
 		Title:   "User API (Echo + Security)",
@@ -33,30 +34,39 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
+	spec := simple.Spec{
+		"GET /secure/users": {
+			Tags:      []string{"Secure Users"},
+			Security:  &bearer,
+			ResSchema: []SecUser{},
+			Status:    http.StatusOK,
+		},
+		"POST /secure/users": {
+			Tags:      []string{"Secure Users"},
+			Security:  &apiKey,
+			ResSchema: struct{}{},
+			Status:    http.StatusCreated,
+		},
+	}
+
+	r := simple.NewEcho(base, spec)
 	secure := r.Group("", echo.WithTags("Secure Users"))
 
-	// Basic handler + Bearer security documented in OpenAPI
 	secure.GET("/secure/users", func(c echolib.Context) error {
 		auth := c.Request().Header.Get("Authorization")
 		if !strings.HasPrefix(auth, "Bearer ") {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return echo.JSON(c, http.StatusOK, []SecUser{{ID: "1", Name: "Alice"}})
-	}, echo.WithSecurity(&bearer))
+	})
 
-	// Basic handler + API key security documented in OpenAPI
 	secure.POST("/secure/users", func(c echolib.Context) error {
 		if c.Request().Header.Get("X-API-Key") == "" {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return c.NoContent(http.StatusCreated)
-	},
-		append(
-			[]echo.HandlerOption{echo.WithSecurity(&apiKey)},
-			echo.JSONRoute(nil, struct{}{}, http.StatusCreated)...,
-		)...,
-	)
+	})
 
-	echo.Register(r, cfg)
-	_ = r.Echo.Start(":8080")
+	echo.Register(base, cfg)
+	_ = base.Echo.Start(":8080")
 }

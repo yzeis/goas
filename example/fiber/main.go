@@ -10,6 +10,7 @@ import (
 
 	"github.com/aizacoders/openapigo/adapters/fiber"
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 type User struct {
@@ -30,24 +31,37 @@ type ErrorResponse struct {
 }
 
 func main() {
-	r := fiber.New()
+	base := fiber.New()
 
+	spec := simple.Spec{
+		"GET /users": {Tags: []string{"Users"}, ResSchema: []User{}, Status: http.StatusOK},
+		"GET /search": {
+			Tags: []string{"Users"},
+			QueryParams: []openapi.QueryParam{
+				{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
+				{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
+			},
+			ResSchema: struct{}{},
+			Status:    http.StatusOK,
+		},
+		"POST /users":       {Tags: []string{"Users"}, ReqSchema: CreateUser{}, ResSchema: struct{}{}, Status: http.StatusCreated},
+		"GET /users/:id":    {Tags: []string{"Users"}, ResSchema: User{}, Status: http.StatusOK},
+		"PUT /users/:id":    {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
+		"PATCH /users/:id":  {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
+		"DELETE /users/:id": {Tags: []string{"Users"}, ResSchema: struct{}{}, Status: http.StatusNoContent},
+	}
+
+	r := simple.NewFiber(base, spec)
 	users := r.Group("", fiber.WithTags("Users"))
 
 	users.GET("/users", func(c *fiberlib.Ctx) error {
 		return fiber.JSON(c, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	}, fiber.JSONRoute(nil, []User{}, http.StatusOK)...)
+	})
 
 	users.GET("/search", func(c *fiberlib.Ctx) error {
 		_ = c.Query("q")
 		return c.SendStatus(http.StatusOK)
-	},
-		fiber.WithQueryParams(
-			openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
-			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
-		),
-		fiber.JSONRoute(nil, struct{}{}, http.StatusOK)...,
-	)
+	})
 
 	users.POST("/users", func(c *fiberlib.Ctx) error {
 		var in CreateUser
@@ -56,7 +70,7 @@ func main() {
 			return nil
 		}
 		return c.SendStatus(http.StatusCreated)
-	}, fiber.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	})
 
 	users.GET("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
@@ -64,7 +78,7 @@ func main() {
 			return fiber.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
-	}, fiber.JSONRoute(nil, User{}, http.StatusOK)...)
+	})
 
 	users.PUT("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
@@ -78,7 +92,7 @@ func main() {
 			return nil
 		}
 		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, fiber.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	})
 
 	users.PATCH("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
@@ -92,7 +106,7 @@ func main() {
 			return nil
 		}
 		return fiber.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, fiber.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	})
 
 	users.DELETE("/users/:id", func(c *fiberlib.Ctx) error {
 		id := c.Params("id")
@@ -101,14 +115,12 @@ func main() {
 			return nil
 		}
 		return c.SendStatus(http.StatusNoContent)
-	}, fiber.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	})
 
-	fiber.Register(r, openapi.Config{
+	fiber.Register(base, openapi.Config{
 		Title:   "User API",
 		Version: "1.0.0",
-		Tags: openapi3.Tags{
-			{Name: "Users", Description: "User management endpoints"},
-		},
+		Tags:    openapi3.Tags{{Name: "Users", Description: "User management endpoints"}},
 	})
-	_ = r.App.Listen(":8080")
+	_ = base.App.Listen(":8080")
 }

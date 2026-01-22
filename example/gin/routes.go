@@ -9,37 +9,26 @@ import (
 
 	"github.com/aizacoders/openapigo/adapters/gin"
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 // registerRoutes wires the endpoints in a readable and grouped way.
 // (Non-typed, non-security variant.)
 
-func registerSystemRoutes(r *gin.Router) {
-	// No group: show simplest usage.
-	opts := append([]gin.HandlerOption{gin.WithTags("System")}, gin.JSONRoute(struct{}{}, map[string]string{}, http.StatusOK)...)
-	r.GET("/healthz", handleHealthz, opts...)
+func registerSystemRoutes(r *simple.GinRouter) {
+	r.GET("/healthz", handleHealthz)
 }
 
-func registerUserRoutes(r *gin.Router) {
+func registerUserRoutes(r *simple.GinRouter) {
 	users := r.Group("", gin.WithTags("Users"))
 
 	users.GET("/users", handleListUsers)
-
-	users.GET("/search",
-		handleSearchUsers,
-		gin.WithQueryParams(
-			openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
-			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
-		),
-		gin.WithResponses(openapi.ResponseSpec{Status: http.StatusOK, Schema: struct{}{}, Description: "OK"}),
-	)
-
-	// Schemas declared via JSONRoute; handler stays plain gin.HandlerFunc.
-	users.POST("/users", handleCreateUser, gin.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	users.GET("/search", handleSearchUsers)
+	users.POST("/users", handleCreateUser)
 	users.GET("/users/:id", handleGetUser)
-	users.PUT("/users/:id", handlePutUser, gin.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
-	users.PATCH("/users/:id", handlePatchUser, gin.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
-	users.DELETE("/users/:id", handleDeleteUser, gin.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	users.PUT("/users/:id", handlePutUser)
+	users.PATCH("/users/:id", handlePatchUser)
+	users.DELETE("/users/:id", handleDeleteUser)
 }
 
 func openAPICfg() openapi.Config {
@@ -49,5 +38,26 @@ func openAPICfg() openapi.Config {
 		Tags: openapi3.Tags{
 			{Name: "Users", Description: "User management endpoints"},
 		},
+	}
+}
+
+func springSpec() simple.Spec {
+	return simple.Spec{
+		"GET /healthz": {Tags: []string{"System"}, ResSchema: map[string]string{}, Status: http.StatusOK},
+		"GET /users":   {Tags: []string{"Users"}, ResSchema: []User{}, Status: http.StatusOK},
+		"GET /search": {
+			Tags: []string{"Users"},
+			QueryParams: []openapi.QueryParam{
+				{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
+				{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
+			},
+			ResSchema: struct{}{},
+			Status:    http.StatusOK,
+		},
+		"POST /users":       {Tags: []string{"Users"}, ReqSchema: CreateUser{}, ResSchema: struct{}{}, Status: http.StatusCreated},
+		"GET /users/:id":    {Tags: []string{"Users"}, ResSchema: User{}, Status: http.StatusOK},
+		"PUT /users/:id":    {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
+		"PATCH /users/:id":  {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
+		"DELETE /users/:id": {Tags: []string{"Users"}, ResSchema: struct{}{}, Status: http.StatusNoContent},
 	}
 }

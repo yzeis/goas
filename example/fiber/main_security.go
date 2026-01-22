@@ -11,6 +11,7 @@ import (
 
 	"github.com/aizacoders/openapigo/adapters/fiber"
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 type SecUser struct {
@@ -19,7 +20,7 @@ type SecUser struct {
 }
 
 func main() {
-	r := fiber.New()
+	base := fiber.New()
 
 	cfg := openapi.Config{
 		Title:   "User API (Fiber + Security)",
@@ -33,6 +34,12 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
+	spec := simple.Spec{
+		"GET /secure/users":  {Tags: []string{"Secure Users"}, Security: &bearer, ResSchema: []SecUser{}, Status: http.StatusOK},
+		"POST /secure/users": {Tags: []string{"Secure Users"}, Security: &apiKey, ResSchema: struct{}{}, Status: http.StatusCreated},
+	}
+
+	r := simple.NewFiber(base, spec)
 	secure := r.Group("", fiber.WithTags("Secure Users"))
 
 	secure.GET("/secure/users", func(c *fiberlib.Ctx) error {
@@ -41,20 +48,15 @@ func main() {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
 		return fiber.JSON(c, http.StatusOK, []SecUser{{ID: "1", Name: "Alice"}})
-	}, fiber.WithSecurity(&bearer))
+	})
 
 	secure.POST("/secure/users", func(c *fiberlib.Ctx) error {
 		if c.Get("X-API-Key") == "" {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
 		return c.SendStatus(http.StatusCreated)
-	},
-		append(
-			[]fiber.HandlerOption{fiber.WithSecurity(&apiKey)},
-			fiber.JSONRoute(nil, struct{}{}, http.StatusCreated)...,
-		)...,
-	)
+	})
 
-	fiber.Register(r, cfg)
-	_ = r.App.Listen(":8080")
+	fiber.Register(base, cfg)
+	_ = base.App.Listen(":8080")
 }

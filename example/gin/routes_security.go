@@ -9,6 +9,7 @@ import (
 
 	"github.com/aizacoders/openapigo/adapters/gin"
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 func openAPICfgSecurity() (openapi.Config, *openapi3.SecurityRequirement, *openapi3.SecurityRequirement) {
@@ -28,21 +29,32 @@ func openAPICfgSecurity() (openapi.Config, *openapi3.SecurityRequirement, *opena
 	return cfg, &bearer, &apiKey
 }
 
-func registerSecureRoutes(r *gin.Router, bearer, apiKey *openapi3.SecurityRequirement) {
-	// No group: keep one example direct on router.
-	healthOpts := append(
-		[]gin.HandlerOption{gin.WithTags("System"), gin.WithSecurity(bearer)},
-		gin.JSONRoute(struct{}{}, map[string]string{}, http.StatusOK)...,
-	)
-	r.GET("/secure/healthz", handleSecureHealthz, healthOpts...)
+func registerSecureRoutes(r *simple.GinRouter, bearer, apiKey *openapi3.SecurityRequirement) {
+	spec := r.Spec
+	// enrich existing spec
+	spec["GET /secure/healthz"] = simple.RouteDef{
+		Tags:      []string{"System"},
+		Security:  bearer,
+		ResSchema: map[string]string{},
+		Status:    http.StatusOK,
+	}
+	spec["GET /secure/users"] = simple.RouteDef{
+		Tags:      []string{"Secure Users"},
+		Security:  bearer,
+		ResSchema: []SecUser{},
+		Status:    http.StatusOK,
+	}
+	spec["POST /secure/users"] = simple.RouteDef{
+		Tags:      []string{"Secure Users"},
+		Security:  apiKey,
+		ResSchema: struct{}{},
+		Status:    http.StatusCreated,
+	}
+	r.Spec = spec
+
+	r.GET("/secure/healthz", handleSecureHealthz)
 
 	secure := r.Group("", gin.WithTags("Secure Users"))
-
-	secure.GET("/secure/users", handleSecureListUsers, gin.WithSecurity(bearer))
-
-	postOpts := append(
-		[]gin.HandlerOption{gin.WithSecurity(apiKey)},
-		gin.JSONRoute(nil, struct{}{}, http.StatusCreated)...,
-	)
-	secure.POST("/secure/users", handleSecureCreateUser, postOpts...)
+	secure.GET("/secure/users", handleSecureListUsers)
+	secure.POST("/secure/users", handleSecureCreateUser)
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
@@ -27,46 +28,84 @@ type CreateUser struct {
 }
 
 func main() {
-	r := openapi.NewRouter()
+	base := openapi.NewRouter()
 
-	users := r.Group("", openapi.WithTags("Users"))
+	spec := simple.Spec{
+		"GET /users": {
+			Tags:      []string{"Users"},
+			ResSchema: []User{},
+			Status:    http.StatusOK,
+		},
+		"GET /search": {
+			Tags: []string{"Users"},
+			QueryParams: []openapi.QueryParam{
+				{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
+				{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
+			},
+			ResSchema: struct{}{},
+			Status:    http.StatusOK,
+		},
+		"POST /users": {
+			Tags:      []string{"Users"},
+			ReqSchema: CreateUser{},
+			ResSchema: struct{}{},
+			Status:    http.StatusCreated,
+		},
+		"GET /users/{id}": {
+			Tags:      []string{"Users"},
+			ResSchema: User{},
+			Status:    http.StatusOK,
+		},
+		"PUT /users/{id}": {
+			Tags:      []string{"Users"},
+			ReqSchema: UpdateUser{},
+			ResSchema: User{},
+			Status:    http.StatusOK,
+		},
+		"PATCH /users/{id}": {
+			Tags:      []string{"Users"},
+			ReqSchema: UpdateUser{},
+			ResSchema: User{},
+			Status:    http.StatusOK,
+		},
+		"DELETE /users/{id}": {
+			Tags:      []string{"Users"},
+			ResSchema: struct{}{},
+			Status:    http.StatusNoContent,
+		},
+	}
 
-	users.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
+	r := simple.New(base, spec)
+
+	// Clean routes: just HTTP methods + handlers.
+	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
 		openapi.JSON(w, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	}, openapi.JSONRoute(nil, []User{}, http.StatusOK)...)
+	})
 
-	users.GET("/search", func(w http.ResponseWriter, req *http.Request) {
+	r.GET("/search", func(w http.ResponseWriter, req *http.Request) {
 		_, _, _ = openapi.QueryValue[int](req, "limit")
 		w.WriteHeader(http.StatusOK)
-	},
-		append(
-			[]openapi.HandlerOption{openapi.WithQueryParams(
-				openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
-				openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
-			)},
-			openapi.JSONRoute(nil, struct{}{}, http.StatusOK)...,
-		)...,
-	)
+	})
 
-	users.POST("/users", func(w http.ResponseWriter, req *http.Request) {
+	r.POST("/users", func(w http.ResponseWriter, req *http.Request) {
 		var in CreateUser
 		if err := openapi.Bind(req, &in); err != nil || in.Name == "" {
 			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-	}, openapi.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	})
 
-	users.GET("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	r.GET("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		if id == "404" {
 			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: "Alice"})
-	}, openapi.JSONRoute(nil, User{}, http.StatusOK)...)
+	})
 
-	users.PUT("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	r.PUT("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		var in UpdateUser
 		if err := openapi.Bind(req, &in); err != nil {
@@ -78,9 +117,9 @@ func main() {
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	}, openapi.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	})
 
-	users.PATCH("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	r.PATCH("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		var in UpdateUser
 		if err := openapi.Bind(req, &in); err != nil {
@@ -92,18 +131,18 @@ func main() {
 			return
 		}
 		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	}, openapi.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	})
 
-	users.DELETE("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
+	r.DELETE("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id := openapi.PathValue(req, "id")
 		if id == "404" {
 			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
-	}, openapi.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	})
 
-	openapi.Register(r, openapi.Config{
+	openapi.Register(base, openapi.Config{
 		Title:   "User API",
 		Version: "1.0.0",
 		Tags: openapi3.Tags{

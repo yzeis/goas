@@ -10,6 +10,7 @@ import (
 
 	"github.com/aizacoders/openapigo/adapters/echo"
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 type User struct {
@@ -30,24 +31,37 @@ type CreateUser struct {
 }
 
 func main() {
-	r := echo.New()
+	base := echo.New()
 
+	spec := simple.Spec{
+		"GET /users": {Tags: []string{"Users"}, ResSchema: []User{}, Status: http.StatusOK},
+		"GET /search": {
+			Tags: []string{"Users"},
+			QueryParams: []openapi.QueryParam{
+				{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
+				{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
+			},
+			ResSchema: struct{}{},
+			Status:    http.StatusOK,
+		},
+		"POST /users":       {Tags: []string{"Users"}, ReqSchema: CreateUser{}, ResSchema: struct{}{}, Status: http.StatusCreated},
+		"GET /users/:id":    {Tags: []string{"Users"}, ResSchema: User{}, Status: http.StatusOK},
+		"PUT /users/:id":    {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
+		"PATCH /users/:id":  {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
+		"DELETE /users/:id": {Tags: []string{"Users"}, ResSchema: struct{}{}, Status: http.StatusNoContent},
+	}
+
+	r := simple.NewEcho(base, spec)
 	users := r.Group("", echo.WithTags("Users"))
 
 	users.GET("/users", func(c echolib.Context) error {
 		return echo.JSON(c, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	}, echo.JSONRoute(nil, []User{}, http.StatusOK)...)
+	})
 
 	users.GET("/search", func(c echolib.Context) error {
 		_ = c.QueryParam("q")
 		return c.NoContent(http.StatusOK)
-	},
-		echo.WithQueryParams(
-			openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
-			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
-		),
-		echo.JSONRoute(nil, struct{}{}, http.StatusOK)...,
-	)
+	})
 
 	users.POST("/users", func(c echolib.Context) error {
 		var in CreateUser
@@ -56,7 +70,7 @@ func main() {
 			return nil
 		}
 		return c.NoContent(http.StatusCreated)
-	}, echo.JSONRoute(CreateUser{}, struct{}{}, http.StatusCreated)...)
+	})
 
 	users.GET("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
@@ -64,7 +78,7 @@ func main() {
 			return echo.JSON(c, http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		}
 		return echo.JSON(c, http.StatusOK, User{ID: id, Name: "Alice"})
-	}, echo.JSONRoute(nil, User{}, http.StatusOK)...)
+	})
 
 	users.PUT("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
@@ -78,7 +92,7 @@ func main() {
 			return nil
 		}
 		return echo.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, echo.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	})
 
 	users.PATCH("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
@@ -92,7 +106,7 @@ func main() {
 			return nil
 		}
 		return echo.JSON(c, http.StatusOK, User{ID: id, Name: in.Name})
-	}, echo.JSONRoute(UpdateUser{}, User{}, http.StatusOK)...)
+	})
 
 	users.DELETE("/users/:id", func(c echolib.Context) error {
 		id := c.Param("id")
@@ -101,14 +115,12 @@ func main() {
 			return nil
 		}
 		return c.NoContent(http.StatusNoContent)
-	}, echo.JSONRoute(nil, struct{}{}, http.StatusNoContent)...)
+	})
 
-	echo.Register(r, openapi.Config{
+	echo.Register(base, openapi.Config{
 		Title:   "User API",
 		Version: "1.0.0",
-		Tags: openapi3.Tags{
-			{Name: "Users", Description: "User management endpoints"},
-		},
+		Tags:    openapi3.Tags{{Name: "Users", Description: "User management endpoints"}},
 	})
-	_ = r.Echo.Start(":8080")
+	_ = base.Echo.Start(":8080")
 }

@@ -4,6 +4,7 @@ package main
 
 import (
 	"github.com/aizacoders/openapigo/adapters/gin"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 type User struct {
@@ -26,8 +27,10 @@ type ErrorResponse struct {
 func main() {
 	r := gin.New()
 
-	registerSystemRoutes(r)
-	registerUserRoutes(r)
+	sr := simple.NewGin(r, springSpec())
+
+	registerSystemRoutes(sr)
+	registerUserRoutes(sr)
 
 	gin.Register(r, openAPICfg())
 	_ = r.Engine.Run(":8080")

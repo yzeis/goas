@@ -10,6 +10,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 type SecUser struct {
@@ -18,7 +19,7 @@ type SecUser struct {
 }
 
 func main() {
-	r := openapi.NewRouter()
+	base := openapi.NewRouter()
 
 	cfg := openapi.Config{
 		Title:   "User API (Security)",
@@ -35,6 +36,12 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
+	spec := simple.Spec{
+		"GET /secure/users":  {Tags: []string{"Secure Users"}, Security: &bearer, ResSchema: []SecUser{}, Status: http.StatusOK},
+		"POST /secure/users": {Tags: []string{"Secure Users"}, Security: &apiKey, ResSchema: struct{}{}, Status: http.StatusCreated},
+	}
+
+	r := simple.New(base, spec)
 	secure := r.Group("", openapi.WithTags("Secure Users"))
 
 	// Bearer-protected endpoint
@@ -45,18 +52,17 @@ func main() {
 			return
 		}
 		_ = json.NewEncoder(w).Encode([]SecUser{{ID: "1", Name: "Alice"}})
-	}, openapi.WithSecurity(&bearer))
+	})
 
 	// API-key-protected endpoint
-	apiKeyPostOpts := append([]openapi.HandlerOption{openapi.WithSecurity(&apiKey)}, openapi.JSONRoute(nil, struct{}{}, http.StatusCreated)...)
 	secure.POST("/secure/users", func(w http.ResponseWriter, req *http.Request) {
 		if req.Header.Get("X-API-Key") == "" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-	}, apiKeyPostOpts...)
+	})
 
-	openapi.Register(r, cfg)
+	openapi.Register(base, cfg)
 	_ = http.ListenAndServe(":8080", r)
 }
