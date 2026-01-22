@@ -1,9 +1,16 @@
 package ui
 
 import (
+	_ "embed"
 	"net/http"
 	"strings"
+	"text/template"
 )
+
+//go:embed templates/swagger-ui.html
+var swaggerUITemplate string
+
+var swaggerUITpl = template.Must(template.New("swagger-ui.html").Parse(swaggerUITemplate))
 
 type SwaggerUIConfig struct {
 	MountPath   string // default: /swagger-ui
@@ -37,25 +44,7 @@ func RegisterSwaggerUI(mux interface {
 	mux.Get(mount+"/", redirectHTML)
 	mux.Get(indexPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte(`
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Swagger UI</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
-</head>
-<body>
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script>
-SwaggerUIBundle({
-  url: '` + spec + `',
-  dom_id: '#swagger-ui'
-});
-</script>
-</body>
-</html>
-`))
+		_ = swaggerUITpl.Execute(w, map[string]any{"SpecURL": spec})
 	})
 
 	// Legacy: /swagger should redirect to new canonical UI.

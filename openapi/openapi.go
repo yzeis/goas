@@ -25,6 +25,7 @@ func PathValue(r *http.Request, key string) string {
 type Config struct {
 	Title           string
 	Version         string
+	Description     string
 	SecuritySchemes map[string]*openapi3.SecuritySchemeRef
 	Tags            openapi3.Tags
 	SpecPath        string

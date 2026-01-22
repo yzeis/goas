@@ -10,6 +10,7 @@ import (
 	ginlib "github.com/gin-gonic/gin"
 
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/ui"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
@@ -171,23 +172,7 @@ func Register(r *Router, cfg openapi.Config) {
 	r.Engine.GET(mount+"/", redirect)
 	r.Engine.GET(indexPath, func(c *ginlib.Context) {
 		c.Header("Content-Type", "text/html")
-		c.String(200, `<!DOCTYPE html>
-<html>
-<head>
-  <title>Swagger UI</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
-</head>
-<body>
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script>
-SwaggerUIBundle({
-  url: '`+specPath+`',
-  dom_id: '#swagger-ui'
-});
-</script>
-</body>
-</html>`)
+		ui.WriteSwaggerUIHTML(c.Writer, ui.SwaggerUIConfig{SpecURLPath: specPath})
 	})
 
 	// Legacy /swagger redirect

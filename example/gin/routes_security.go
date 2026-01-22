@@ -12,8 +12,9 @@ import (
 
 func openAPICfgSecurity() (openapi.Config, *openapi3.SecurityRequirement, *openapi3.SecurityRequirement) {
 	cfg := openapi.Config{
-		Title:   "User API (Gin + Security)",
-		Version: "1.0.0",
+		Title:       "User API (Gin + Security)",
+		Version:     "1.0.0",
+		Description: "An example API with secured endpoints using Gin and OpenAPIGO",
 		Tags: openapi3.Tags{
 			{Name: "Secure Users", Description: "Secured endpoints (Bearer / X-API-Key)"},
 		},

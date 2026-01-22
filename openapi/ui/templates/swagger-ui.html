@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Swagger UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+  <style>
+    /* Native-ish dark theme overrides (more complete) */
+    :root[data-theme='dark'] { color-scheme: dark; }
+    :root[data-theme='dark'] body { background: #0f1115; }
+
+    /* Use a single neutral dark surface everywhere (avoid dark blue panels) */
+    :root[data-theme='dark'] {
+      --oa-bg: #0f1115;
+      --oa-surface: #0f1115;
+      --oa-border: #2a2f3a;
+      --oa-text: #e6e6e6;
+      --oa-muted: #9aa4b2;
+      --oa-link: #7ab7ff;
+      --oa-button: #222735;
+
+      /* Accent colors for method chips/opblocks */
+      --oa-get: #61affe;
+      --oa-post: #49cc90;
+      --oa-put: #fca130;
+      --oa-patch: #50e3c2;
+      --oa-delete: #f93e3e;
+    }
+
+    /* Base text */
+    :root[data-theme='dark'] .swagger-ui,
+    :root[data-theme='dark'] .swagger-ui .info,
+    :root[data-theme='dark'] .swagger-ui .info .title,
+    :root[data-theme='dark'] .swagger-ui .info p,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown p,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown li,
+    :root[data-theme='dark'] .swagger-ui .markdown,
+    :root[data-theme='dark'] .swagger-ui .markdown p,
+    :root[data-theme='dark'] .swagger-ui .markdown li {
+      color: var(--oa-text);
+    }
+
+    /* Markdown headings / inline code */
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown h1,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown h2,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown h3,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown h4,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown h5,
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown h6 {
+      color: var(--oa-text);
+    }
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown code,
+    :root[data-theme='dark'] .swagger-ui .markdown code {
+      background: rgba(255,255,255,0.06);
+      color: var(--oa-text);
+      border: 1px solid var(--oa-border);
+      border-radius: 6px;
+      padding: 0 6px;
+    }
+    :root[data-theme='dark'] .swagger-ui .renderedMarkdown a,
+    :root[data-theme='dark'] .swagger-ui .markdown a {
+      color: var(--oa-link);
+    }
+
+    :root[data-theme='dark'] .swagger-ui .info .title small {
+      background: var(--oa-button);
+      color: var(--oa-text);
+    }
+
+    /* Surfaces (make them match base background) */
+    :root[data-theme='dark'] .swagger-ui .scheme-container,
+    :root[data-theme='dark'] .swagger-ui .wrapper,
+    :root[data-theme='dark'] .swagger-ui section.models,
+    :root[data-theme='dark'] .swagger-ui .model-box,
+    :root[data-theme='dark'] .swagger-ui .model,
+    :root[data-theme='dark'] .swagger-ui .opblock,
+    :root[data-theme='dark'] .swagger-ui .tab,
+    :root[data-theme='dark'] .swagger-ui .opblock-section,
+    :root[data-theme='dark'] .swagger-ui .responses-wrapper,
+    :root[data-theme='dark'] .swagger-ui .responses-inner,
+    :root[data-theme='dark'] .swagger-ui .responses-table {
+      background: var(--oa-surface);
+      box-shadow: none;
+      border-color: var(--oa-border);
+    }
+
+    /* Keep method colors alive */
+    :root[data-theme='dark'] .swagger-ui .opblock-get {
+      border-color: rgba(97,175,254,0.35);
+    }
+    :root[data-theme='dark'] .swagger-ui .opblock-post {
+      border-color: rgba(73,204,144,0.35);
+    }
+    :root[data-theme='dark'] .swagger-ui .opblock-put {
+      border-color: rgba(252,161,48,0.35);
+    }
+    :root[data-theme='dark'] .swagger-ui .opblock-patch {
+      border-color: rgba(80,227,194,0.35);
+    }
+    :root[data-theme='dark'] .swagger-ui .opblock-delete {
+      border-color: rgba(249,62,62,0.35);
+    }
+
+    :root[data-theme='dark'] .swagger-ui .opblock-get .opblock-summary-method { background: var(--oa-get); }
+    :root[data-theme='dark'] .swagger-ui .opblock-post .opblock-summary-method { background: var(--oa-post); }
+    :root[data-theme='dark'] .swagger-ui .opblock-put .opblock-summary-method { background: var(--oa-put); }
+    :root[data-theme='dark'] .swagger-ui .opblock-patch .opblock-summary-method { background: var(--oa-patch); }
+    :root[data-theme='dark'] .swagger-ui .opblock-delete .opblock-summary-method { background: var(--oa-delete); }
+
+    :root[data-theme='dark'] .swagger-ui .opblock-summary-method {
+      color: #0b0d10; /* readable on bright method chip */
+      text-shadow: none;
+    }
+
+    :root[data-theme='dark'] .swagger-ui .opblock .opblock-summary {
+      border-color: var(--oa-border);
+    }
+    :root[data-theme='dark'] .swagger-ui .opblock-tag {
+      border-bottom: 1px solid var(--oa-border);
+      color: var(--oa-text);
+    }
+
+    /* Left meta text inside op blocks */
+    :root[data-theme='dark'] .swagger-ui .opblock-summary-description,
+    :root[data-theme='dark'] .swagger-ui .opblock-summary-path,
+    :root[data-theme='dark'] .swagger-ui .opblock-summary-path__deprecated {
+      color: var(--oa-text);
+    }
+
+    /* Section titles/labels (e.g. Request body / Responses) - reduce contrast */
+    :root[data-theme='dark'] .swagger-ui h1,
+    :root[data-theme='dark'] .swagger-ui h2,
+    :root[data-theme='dark'] .swagger-ui h3,
+    :root[data-theme='dark'] .swagger-ui h4,
+    :root[data-theme='dark'] .swagger-ui h5,
+    :root[data-theme='dark'] .swagger-ui h6 {
+      color: var(--oa-text);
+    }
+    :root[data-theme='dark'] .swagger-ui .opblock-title,
+    :root[data-theme='dark'] .swagger-ui .opblock-section-header h4,
+    :root[data-theme='dark'] .swagger-ui .opblock-section-header label,
+    :root[data-theme='dark'] .swagger-ui .opblock-section-header,
+    :root[data-theme='dark'] .swagger-ui label {
+      color: var(--oa-muted);
+    }
+
+    /* Make section header rows not look like separate gray cards */
+    :root[data-theme='dark'] .swagger-ui .opblock-section-header {
+      background: var(--oa-bg);
+      border-color: var(--oa-border);
+      box-shadow: none;
+    }
+
+    /* Tables (params/responses) */
+    :root[data-theme='dark'] .swagger-ui table thead tr td,
+    :root[data-theme='dark'] .swagger-ui table thead tr th {
+      color: var(--oa-text);
+      border-bottom: 1px solid var(--oa-border);
+    }
+    :root[data-theme='dark'] .swagger-ui table tbody tr td {
+      color: var(--oa-text);
+      border-top: 1px solid var(--oa-border);
+    }
+
+    :root[data-theme='dark'] .swagger-ui .parameter__name,
+    :root[data-theme='dark'] .swagger-ui .parameter__type,
+    :root[data-theme='dark'] .swagger-ui .response-col_status,
+    :root[data-theme='dark'] .swagger-ui .response-col_description,
+    :root[data-theme='dark'] .swagger-ui .response-col_links,
+    :root[data-theme='dark'] .swagger-ui .response-col_headers {
+      color: var(--oa-text);
+    }
+
+    /* Inputs */
+    :root[data-theme='dark'] .swagger-ui select,
+    :root[data-theme='dark'] .swagger-ui input[type=text],
+    :root[data-theme='dark'] .swagger-ui input[type=password],
+    :root[data-theme='dark'] .swagger-ui input[type=number],
+    :root[data-theme='dark'] .swagger-ui textarea {
+      background: var(--oa-bg);
+      color: var(--oa-text);
+      border: 1px solid var(--oa-border);
+    }
+    :root[data-theme='dark'] .swagger-ui input::placeholder,
+    :root[data-theme='dark'] .swagger-ui textarea::placeholder {
+      color: var(--oa-muted);
+    }
+
+    /* Buttons */
+    :root[data-theme='dark'] .swagger-ui .btn,
+    :root[data-theme='dark'] .swagger-ui .btn:hover,
+    :root[data-theme='dark'] .swagger-ui .btn:active {
+      background: var(--oa-button);
+      border-color: var(--oa-border);
+      color: var(--oa-text);
+    }
+
+    /* Links */
+    :root[data-theme='dark'] .swagger-ui a { color: var(--oa-link); }
+
+    /* JSON / Code blocks */
+    :root[data-theme='dark'] .swagger-ui pre,
+    :root[data-theme='dark'] .swagger-ui code,
+    :root[data-theme='dark'] .swagger-ui .microlight {
+      background: var(--oa-bg);
+      color: var(--oa-text);
+      border-color: var(--oa-border);
+    }
+
+    /* Improve microlight token colors (JSON viewer) */
+    :root[data-theme='dark'] .swagger-ui .microlight {
+      color: var(--oa-text);
+    }
+    :root[data-theme='dark'] .swagger-ui .microlight .token.string,
+    :root[data-theme='dark'] .swagger-ui .microlight .token.attr-value { color: #a5d6ff; }
+    :root[data-theme='dark'] .swagger-ui .microlight .token.number { color: #ffd580; }
+    :root[data-theme='dark'] .swagger-ui .microlight .token.boolean,
+    :root[data-theme='dark'] .swagger-ui .microlight .token.keyword { color: #c3a6ff; }
+    :root[data-theme='dark'] .swagger-ui .microlight .token.punctuation { color: #cbd5e1; }
+
+    /* Authorize modal */
+    :root[data-theme='dark'] .swagger-ui .dialog-ux .modal-ux,
+    :root[data-theme='dark'] .swagger-ui .dialog-ux .modal-ux-header,
+    :root[data-theme='dark'] .swagger-ui .dialog-ux .modal-ux-content,
+    :root[data-theme='dark'] .swagger-ui .dialog-ux .modal-ux-footer {
+      background: var(--oa-bg);
+      border: 1px solid var(--oa-border);
+      color: var(--oa-text);
+    }
+    :root[data-theme='dark'] .swagger-ui .dialog-ux .modal-ux-header h3 {
+      color: var(--oa-text);
+    }
+
+    /* Authorize modal layout fixes */
+    .swagger-ui .dialog-ux .modal-ux {
+      max-width: 720px;
+      width: calc(100% - 40px);
+    }
+
+    /* Hide the auth containers list until a scheme is chosen */
+    .swagger-ui .dialog-ux .modal-ux[data-oa-auth='chooser'] .auth-container {
+      display: none;
+    }
+    .swagger-ui .dialog-ux .modal-ux[data-oa-auth='chooser'] .auth-container.oa-auth-active {
+      display: block;
+    }
+
+    /* Full-width inputs in auth modal */
+    .swagger-ui .dialog-ux .modal-ux .auth-container input[type='text'],
+    .swagger-ui .dialog-ux .modal-ux .auth-container input[type='password'] {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+
+    /* Right align the bottom buttons (Authorize / Close) */
+    .swagger-ui .dialog-ux .modal-ux .modal-ux-footer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .swagger-ui .dialog-ux .modal-ux .modal-ux-footer .btn {
+      width: 100% !important;
+      margin: 0;
+    }
+
+    /* Authorize modal buttons: make them truly full-width (override Swagger UI centering wrappers) */
+    .swagger-ui .dialog-ux .modal-ux .modal-ux-footer {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    /* Some swagger-ui versions wrap buttons in a .auth-btn-wrapper that is centered */
+    .swagger-ui .dialog-ux .modal-ux .auth-btn-wrapper {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      justify-content: stretch;
+    }
+
+    .swagger-ui .dialog-ux .modal-ux .auth-btn-wrapper .btn {
+      width: 100% !important;
+      margin: 0 !important;
+    }
+
+    @media (max-width: 520px) {
+      .swagger-ui .dialog-ux .modal-ux .auth-btn-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Ensure chooser is visible and separated */
+    .swagger-ui .dialog-ux .modal-ux .oa-auth-chooser {
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    :root[data-theme='dark'] .swagger-ui .dialog-ux .modal-ux .oa-auth-chooser {
+      border-bottom-color: rgba(255,255,255,.12);
+    }
+
+    /* Auth-type chooser */
+    .oa-auth-chooser {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 14px;
+    }
+    .oa-auth-chooser button {
+      border: 1px solid rgba(0,0,0,.15);
+      background: rgba(255,255,255,.85);
+      color: #111;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    .oa-auth-chooser button.oa-auth-selected {
+      background: rgba(122,183,255,0.18);
+      border-color: rgba(122,183,255,0.6);
+    }
+    :root[data-theme='dark'] .oa-auth-chooser button {
+      background: rgba(0,0,0,.35);
+      color: #fff;
+      border-color: rgba(255,255,255,.18);
+    }
+    :root[data-theme='dark'] .oa-auth-chooser button.oa-auth-selected {
+      background: rgba(122,183,255,0.18);
+      border-color: rgba(122,183,255,0.7);
+    }
+
+    /* Toggle button */
+    .oa-theme-toggle {
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      z-index: 9999;
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font: 16px/1 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,.15);
+      background: rgba(255,255,255,.85);
+      color: #111;
+      cursor: pointer;
+    }
+    :root[data-theme='dark'] .oa-theme-toggle {
+      background: rgba(0,0,0,.45);
+      color: #fff;
+      border-color: rgba(255,255,255,.2);
+    }
+    .oa-theme-toggle:focus {
+      outline: 2px solid rgba(122,183,255,0.7);
+      outline-offset: 2px;
+    }
+    .oa-theme-toggle svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    /* Per-scheme auth blocks: make the action buttons match the form width (50/50) */
+    .swagger-ui .dialog-ux .modal-ux .auth-container {
+      width: 100%;
+    }
+
+    .swagger-ui .dialog-ux .modal-ux .auth-container .auth-btn-wrapper {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 12px 0 0 0 !important;
+      padding: 0 !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      justify-content: stretch !important;
+      align-items: stretch;
+    }
+
+    .swagger-ui .dialog-ux .modal-ux .auth-container .auth-btn-wrapper .btn {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+    }
+
+    @media (max-width: 520px) {
+      .swagger-ui .dialog-ux .modal-ux .auth-container .auth-btn-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Also ensure any modal footer buttons are centered text-wise */
+    .swagger-ui .dialog-ux .modal-ux .modal-ux-footer .btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+    }
+
+    /* Bigger buttons in authorize modal */
+    .swagger-ui .dialog-ux .modal-ux .auth-container .auth-btn-wrapper .btn,
+    .swagger-ui .dialog-ux .modal-ux .modal-ux-footer .btn {
+      min-height: 34px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 8px 12px !important;
+    }
+
+    /* Match auth input height to the bigger buttons */
+    .swagger-ui .dialog-ux .modal-ux .auth-container input[type='text'],
+    .swagger-ui .dialog-ux .modal-ux .auth-container input[type='password'] {
+      min-height: 34px;
+      height: 34px;
+      padding: 7px 10px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    /* Ensure modal close icon aligns with header spacing nicely */
+    .swagger-ui .dialog-ux .modal-ux-header {
+      align-items: center;
+    }
+
+    /* Dark mode: security lock icon contrast */
+    :root[data-theme='dark'] .swagger-ui svg,
+    :root[data-theme='dark'] .swagger-ui svg path,
+    :root[data-theme='dark'] .swagger-ui svg use {
+      /* Only affects icons that inherit currentColor; keeps logos unaffected in most cases */
+      color: var(--oa-text);
+      stroke: currentColor;
+    }
+
+    :root[data-theme='dark'] .swagger-ui .authorization__btn svg,
+    :root[data-theme='dark'] .swagger-ui .authorization__btn svg path {
+      fill: var(--oa-text);
+      stroke: var(--oa-text);
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+<button id="oaThemeToggle" class="oa-theme-toggle" type="button" aria-label="Toggle theme"></button>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+<script>
+(function() {
+  var sunIcon = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+    + '<path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>'
+    + '<path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.64 5.64 4.22 4.22M19.78 19.78l-1.42-1.42M18.36 5.64l1.42-1.42M4.22 19.78l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+    + '</svg>';
+  var moonIcon = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+    + '<path d="M21 13.5A8.5 8.5 0 0 1 10.5 3a7 7 0 1 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
+    + '</svg>';
+
+  function getQueryTheme() {
+    try {
+      var p = new URLSearchParams(window.location.search);
+      var t = (p.get('theme') || '').toLowerCase();
+      if (t === 'dark' || t === 'light') return t;
+    } catch(e) {}
+    return '';
+  }
+  function preferredTheme() {
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  function loadTheme() {
+    return getQueryTheme() || localStorage.getItem('oa.swagger.theme') || preferredTheme();
+  }
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('oa.swagger.theme', t); } catch(e) {}
+
+    var btn = document.getElementById('oaThemeToggle');
+    if (!btn) return;
+
+    // If current theme is dark, show sun (switch to light). If light, show moon.
+    btn.innerHTML = (t === 'dark') ? sunIcon : moonIcon;
+    btn.setAttribute('aria-label', (t === 'dark') ? 'Switch to light mode' : 'Switch to dark mode');
+    btn.setAttribute('title', (t === 'dark') ? 'Light mode' : 'Dark mode');
+  }
+  function toggleTheme() {
+    var cur = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  }
+
+  applyTheme(loadTheme());
+  document.getElementById('oaThemeToggle').addEventListener('click', toggleTheme);
+})();
+
+SwaggerUIBundle({
+  url: '{{ .SpecURL }}',
+  dom_id: '#swagger-ui',
+  persistAuthorization: true
+});
+
+// Authorize modal: show auth type chooser first, then show only the selected scheme form.
+(function() {
+  function qsa(root, sel) {
+    try { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); } catch (e) { return []; }
+  }
+
+  function findModal(node) {
+    if (!node || !node.querySelector) return null;
+    if (node.classList && node.classList.contains('dialog-ux')) return node;
+    return node.querySelector('.dialog-ux');
+  }
+
+  function findAuthContainers(modal) {
+    return qsa(modal, '.auth-container').filter(function(c) {
+      return c.querySelector('.auth__name');
+    });
+  }
+
+  function setActive(modal, chosen) {
+    findAuthContainers(modal).forEach(function(c) {
+      if (c === chosen) c.classList.add('oa-auth-active');
+      else c.classList.remove('oa-auth-active');
+    });
+  }
+
+  function injectChooser(modal, containers) {
+    var modalUX = modal.querySelector('.modal-ux') || modal;
+    var content = modal.querySelector('.modal-ux-content') || modal;
+
+    // Mark modal so CSS applies.
+    modalUX.setAttribute('data-oa-auth', 'chooser');
+
+    // Avoid duplicates
+    var existing = content.querySelector('.oa-auth-chooser');
+    if (existing) existing.remove();
+
+    // Ensure no scheme is active initially
+    setActive(modal, null);
+
+    var chooser = document.createElement('div');
+    chooser.className = 'oa-auth-chooser';
+
+    containers.forEach(function(c) {
+      var nameEl = c.querySelector('.auth__name');
+      var schemeName = nameEl ? (nameEl.textContent || '').trim() : 'Auth';
+
+      // More user-friendly label
+      schemeName = schemeName
+        .replace(/\(apiKey\)/i, '(API Key)')
+        .replace(/\(http,\s*Bearer\)/i, '(Bearer)');
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = schemeName;
+      btn.addEventListener('click', function() {
+        qsa(chooser, 'button').forEach(function(b) { b.classList.remove('oa-auth-selected'); });
+        btn.classList.add('oa-auth-selected');
+        setActive(modal, c);
+      });
+
+      chooser.appendChild(btn);
+    });
+
+    content.insertBefore(chooser, content.firstChild);
+  }
+
+  function wireAuthorizeModal(modal) {
+    if (!modal) return;
+
+    var containers = findAuthContainers(modal);
+    if (!containers.length) return;
+
+    injectChooser(modal, containers);
+  }
+
+  var obs = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      (m.addedNodes ? Array.prototype.slice.call(m.addedNodes) : []).forEach(function(node) {
+        var modal = findModal(node);
+        if (!modal) return;
+        // Next tick so swagger-ui has rendered auth containers.
+        setTimeout(function() { wireAuthorizeModal(modal); }, 0);
+      });
+    });
+  });
+
+  obs.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+</body>
+</html>

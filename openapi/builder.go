@@ -15,8 +15,9 @@ func BuildSpec(routes []RouteMeta, cfg Config) *openapi3.T {
 	doc := &openapi3.T{
 		OpenAPI: "3.0.3",
 		Info: &openapi3.Info{
-			Title:   cfg.Title,
-			Version: cfg.Version,
+			Title:       cfg.Title,
+			Version:     cfg.Version,
+			Description: cfg.Description,
 		},
 		Tags:  cfg.Tags,
 		Paths: openapi3.NewPaths(),
