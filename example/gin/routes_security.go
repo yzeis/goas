@@ -35,6 +35,9 @@ func registerSecureRoutes(r *simple.GinRouter, bearer, apiKey *openapi3.Security
 		s.GET("/secure/users").Security(bearer).Res([]SecUser{}).OK()
 		s.POST("/secure/users").Security(apiKey).Res(struct{}{}).Created()
 
+		// Upload secure user file: multipart/form-data.
+		s.POST("/secure/users/upload").Security(apiKey).MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
+
 		s.GET("/secure/demo-errors").Security(bearer).Res(map[string]string{}).OK()
 	})
 	r.Spec = b.Spec()
@@ -44,5 +47,6 @@ func registerSecureRoutes(r *simple.GinRouter, bearer, apiKey *openapi3.Security
 	secure := r.Group("", gin.WithTags("Secure Users"))
 	secure.GET("/secure/users", handleSecureListUsers)
 	secure.POST("/secure/users", handleSecureCreateUser)
+	secure.POST("/secure/users/upload", handleSecureUploadUserFile)
 	secure.GET("/secure/demo-errors", handleSecureDemoErrors)
 }

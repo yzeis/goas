@@ -10,6 +10,9 @@ import (
 //go:embed templates/swagger-ui.html
 var swaggerUITemplate string
 
+//go:embed templates/openapi-stack-logo.png
+var openAPIStackLogoPNG []byte
+
 var swaggerUITpl = template.Must(template.New("swagger-ui.html").Parse(swaggerUITemplate))
 
 type SwaggerUIConfig struct {
@@ -29,6 +32,13 @@ func RegisterSwaggerUI(mux interface {
 	}
 	mount = strings.TrimSuffix(mount, "/")
 
+	// Serve favicon/logo asset
+	mux.Get(mount+"/openapi-stack-logo.png", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(openAPIStackLogoPNG)
+	})
+
 	spec := cfg.SpecURLPath
 	if spec == "" {
 		spec = "/openapi.json"
@@ -44,7 +54,7 @@ func RegisterSwaggerUI(mux interface {
 	mux.Get(mount+"/", redirectHTML)
 	mux.Get(indexPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		_ = swaggerUITpl.Execute(w, map[string]any{"SpecURL": spec})
+		_ = swaggerUITpl.Execute(w, map[string]any{"SpecURL": spec, "MountPath": mount})
 	})
 
 	// Legacy: /swagger should redirect to new canonical UI.

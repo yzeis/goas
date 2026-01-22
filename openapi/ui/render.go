@@ -2,6 +2,7 @@ package ui
 
 import (
 	"io"
+	"strings"
 )
 
 // WriteSwaggerUIHTML renders the embedded Swagger UI template into the provided writer.
@@ -12,6 +13,14 @@ func WriteSwaggerUIHTML(w io.Writer, cfg SwaggerUIConfig) {
 	if spec == "" {
 		spec = "/openapi.json"
 	}
+	mount := cfg.MountPath
+	if mount == "" {
+		mount = "/swagger-ui"
+	}
+	if !strings.HasPrefix(mount, "/") {
+		mount = "/" + mount
+	}
+	mount = strings.TrimSuffix(mount, "/")
 
-	_ = swaggerUITpl.Execute(w, map[string]any{"SpecURL": spec})
+	_ = swaggerUITpl.Execute(w, map[string]any{"SpecURL": spec, "MountPath": mount})
 }

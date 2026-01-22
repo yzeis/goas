@@ -177,3 +177,20 @@ func (r *RouteBuilder) Done() *RouteBuilder {
 	r.sb.b.spec[r.key] = r.def
 	return r
 }
+
+// MultipartUpload declares a multipart/form-data request body with a required file field.
+//
+// Example:
+//
+//	s.POST("/users/upload").MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
+//
+// Under the hood this uses openapi.MultipartFile marker so the OpenAPI builder can render
+// multipart/form-data with binary file part.
+func (r *RouteBuilder) MultipartUpload(fileField string, fields ...openapi.MultipartField) *RouteBuilder {
+	if fileField == "" {
+		fileField = "file"
+	}
+	r.def.ReqSchema = openapi.MultipartSchema(fileField, fields...)
+	r.sb.b.spec[r.key] = r.def
+	return r
+}

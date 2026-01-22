@@ -67,3 +67,17 @@ func handleSecureDemoErrors(c *ginlib.Context) {
 		c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	}
 }
+
+func handleSecureUploadUserFile(c *ginlib.Context) {
+	if c.GetHeader("X-API-Key") == "" {
+		c.JSON(http.StatusUnauthorized, openapi.ErrorResponse{Error: "unauthorized"})
+		return
+	}
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, openapi.ErrorResponse{Error: "missing file"})
+		return
+	}
+	note := c.PostForm("note")
+	c.JSON(http.StatusOK, map[string]string{"filename": file.Filename, "note": note})
+}

@@ -103,7 +103,27 @@ func BuildSpec(routes []RouteMeta, cfg Config) *openapi3.T {
 
 		if route.RequestSchema != nil {
 			schemaRef := infer.RequestSchema(doc, route.RequestSchema)
-			op.RequestBody = &openapi3.RequestBodyRef{Value: &openapi3.RequestBody{Required: true, Content: openapi3.NewContentWithJSONSchemaRef(schemaRef)}}
+
+			// If request schema contains MultipartFile, expose multipart/form-data.
+			// (We detect this by checking whether the inferred schema contains any binary fields.)
+			content := openapi3.NewContentWithJSONSchemaRef(schemaRef)
+			check := schemaRef
+			// If the schema is a $ref, try to resolve it from components.
+			if check != nil && check.Ref != "" {
+				const prefix = "#/components/schemas/"
+				if strings.HasPrefix(check.Ref, prefix) {
+					name := strings.TrimPrefix(check.Ref, prefix)
+					if doc.Components != nil && doc.Components.Schemas != nil {
+						if rr, ok := doc.Components.Schemas[name]; ok {
+							check = rr
+						}
+					}
+				}
+			}
+			if routeIsMultipartUpload(check) {
+				content = openapi3.Content{"multipart/form-data": &openapi3.MediaType{Schema: schemaRef}}
+			}
+			op.RequestBody = &openapi3.RequestBodyRef{Value: &openapi3.RequestBody{Required: true, Content: content}}
 		}
 
 		// Default response behavior (backward-compatible)

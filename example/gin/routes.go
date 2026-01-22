@@ -23,6 +23,7 @@ func registerUserRoutes(r *simple.GinRouter) {
 	users.GET("/users", handleListUsers)
 	users.GET("/search", handleSearchUsers)
 	users.POST("/users", handleCreateUser)
+	users.POST("/users/upload", handleUploadUserFile)
 	users.GET("/users/demo-errors", handleDemoErrors)
 	users.GET("/users/:id", handleGetUser)
 	users.PUT("/users/:id", handlePutUser)
@@ -54,6 +55,9 @@ func springSpec() simple.Spec {
 
 		// Create user: normal endpoint.
 		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Created()
+
+		// Upload user file: multipart/form-data.
+		s.POST("/users/upload").MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
 
 		// Dedicated error showcase endpoint (doesn't depend on security mode).
 		s.GET("/users/demo-errors").Headers(

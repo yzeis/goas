@@ -83,3 +83,16 @@ func handleDeleteUser(c *ginlib.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
+func handleUploadUserFile(c *ginlib.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "missing file"})
+		return
+	}
+	note := c.PostForm("note")
+	c.JSON(http.StatusOK, map[string]string{
+		"filename": file.Filename,
+		"note":     note,
+	})
+}

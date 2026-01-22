@@ -38,6 +38,8 @@ func main() {
 			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
 		).Res(struct{}{}).OK()
 		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Status(http.StatusCreated)
+		// Upload user file: multipart/form-data.
+		s.POST("/users/upload").MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
 		s.GET("/users/{id}").Res(User{}).OK()
 		s.PUT("/users/{id}").Req(UpdateUser{}).Res(User{}).OK()
 		s.PATCH("/users/{id}").Req(UpdateUser{}).Res(User{}).OK()
@@ -65,6 +67,21 @@ func main() {
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
+	})
+
+	r.POST("/users/upload", func(w http.ResponseWriter, req *http.Request) {
+		if err := req.ParseMultipartForm(10 << 20); err != nil {
+			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid multipart"})
+			return
+		}
+		f, fh, err := req.FormFile("file")
+		if err != nil {
+			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "missing file"})
+			return
+		}
+		_ = f.Close()
+		note := req.FormValue("note")
+		openapi.JSON(w, http.StatusOK, map[string]string{"filename": fh.Filename, "note": note})
 	})
 
 	r.GET("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
