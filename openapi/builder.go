@@ -128,24 +128,71 @@ func BuildSpec(routes []RouteMeta, cfg Config) *openapi3.T {
 			op.Responses.Set(key, &openapi3.ResponseRef{Value: resp})
 		}
 
-		// Default error responses (only when user didn't explicitly declare responses)
-		// This keeps the "simple usage" experience while still allowing customization.
-		if len(route.Responses) == 0 {
-			// 401 for secured endpoints
-			if route.Security != nil {
-				errSchema := infer.ResponseSchema(doc, ErrorResponse{})
-				op.Responses.Set("401", &openapi3.ResponseRef{Value: &openapi3.Response{Description: ptr("Unauthorized"), Content: openapi3.NewContentWithJSONSchemaRef(errSchema)}})
+		// Default error responses
+		{
+			// Default set (can be overridden via cfg.DefaultErrorResponses)
+			defaults := cfg.DefaultErrorResponses
+			if defaults == nil {
+				defaults = []int{400, 401, 403, 404, 409, 422, 500, 503}
 			}
-			// 400 for likely body-bearing methods
-			switch route.Method {
-			case http.MethodPost, http.MethodPut, http.MethodPatch:
-				errSchema := infer.ResponseSchema(doc, ErrorResponse{})
-				op.Responses.Set("400", &openapi3.ResponseRef{Value: &openapi3.Response{Description: ptr("Bad Request"), Content: openapi3.NewContentWithJSONSchemaRef(errSchema)}})
+			// If explicitly empty, disable automatic errors.
+			if len(defaults) == 0 {
+				goto afterDefaultErrors
 			}
-			// default 500
-			errSchema := infer.ResponseSchema(doc, ErrorResponse{})
-			op.Responses.Set("500", &openapi3.ResponseRef{Value: &openapi3.Response{Description: ptr("Internal Server Error"), Content: openapi3.NewContentWithJSONSchemaRef(errSchema)}})
+
+			errSchemaSample := cfg.DefaultErrorSchema
+			if errSchemaSample == nil {
+				errSchemaSample = ErrorResponse{}
+			}
+
+			// Only add the defaults if those status codes aren't already provided.
+			// This way, user-provided ResponseSpec overrides still work.
+			addErr := func(code int, desc string) {
+				key := strconv.Itoa(code)
+				if op.Responses.Value(key) != nil {
+					return
+				}
+				errSchema := infer.ResponseSchema(doc, errSchemaSample)
+				op.Responses.Set(key, &openapi3.ResponseRef{Value: &openapi3.Response{Description: ptr(desc), Content: openapi3.NewContentWithJSONSchemaRef(errSchema)}})
+			}
+
+			want := map[int]bool{}
+			for _, c := range defaults {
+				want[c] = true
+			}
+
+			// Conditional defaults
+			if want[401] && route.Security != nil {
+				addErr(http.StatusUnauthorized, "Unauthorized")
+			}
+			if want[403] && route.Security != nil {
+				addErr(http.StatusForbidden, "Forbidden")
+			}
+			if want[400] {
+				switch route.Method {
+				case http.MethodPost, http.MethodPut, http.MethodPatch:
+					addErr(http.StatusBadRequest, "Bad Request")
+				}
+			}
+
+			// Always applicable (if requested)
+			if want[404] {
+				addErr(http.StatusNotFound, "Not Found")
+			}
+			if want[409] {
+				addErr(http.StatusConflict, "Conflict")
+			}
+			if want[422] {
+				addErr(http.StatusUnprocessableEntity, "Unprocessable Entity")
+			}
+			if want[500] {
+				addErr(http.StatusInternalServerError, "Internal Server Error")
+			}
+			if want[503] {
+				addErr(http.StatusServiceUnavailable, "Service Unavailable")
+			}
 		}
+	afterDefaultErrors:
 
 		if route.Security != nil {
 			op.Security = &openapi3.SecurityRequirements{*route.Security}

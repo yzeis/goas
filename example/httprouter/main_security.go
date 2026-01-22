@@ -41,12 +41,7 @@ func main() {
 		s.GET("/secure/users").Security(&bearer).Res([]SecUser{}).OK()
 		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
 
-		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
-		)
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK()
 	})
 
 	spec := b.Spec()

@@ -34,6 +34,17 @@ type Config struct {
 	// Schemas registers component schemas by name without attaching them to a route.
 	// Useful when you want config-only schema registration.
 	Schemas SchemaRegistry
+
+	// DefaultErrorResponses controls which standard error responses are automatically
+	// added to every operation (if not already declared).
+	//
+	// If nil, a sensible default set is used.
+	// If empty (len==0), automatic error responses are disabled.
+	DefaultErrorResponses []int
+
+	// DefaultErrorSchema is the schema used for DefaultErrorResponses.
+	// If nil, openapi.ErrorResponse{} is used.
+	DefaultErrorSchema any
 }
 
 func Register(r *Router, cfg Config) {

@@ -40,12 +40,7 @@ func main() {
 		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
 
 		// Error showcase: helps Swagger UI show error schemas in security mode.
-		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
-		)
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK()
 	})
 
 	spec := b.Spec()
