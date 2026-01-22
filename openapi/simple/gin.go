@@ -4,6 +4,7 @@ package simple
 
 import (
 	"net/http"
+	"strings"
 
 	ginadapter "github.com/aizacoders/openapigo/adapters/gin"
 	"github.com/aizacoders/openapigo/openapi"
@@ -16,14 +17,64 @@ type GinRouter struct {
 	Spec Spec
 }
 
+// GinGroup provides grouping with prefix + shared options, while preserving Spec injection.
+type GinGroup struct {
+	prefix string
+	opts   []ginadapter.HandlerOption
+	r      *GinRouter
+}
+
 func NewGin(base *ginadapter.Router, spec Spec) *GinRouter {
 	return &GinRouter{Base: base, Spec: spec}
 }
 
 func (r *GinRouter) Routes() []openapi.RouteMeta { return r.Base.Routes() }
 
-func (r *GinRouter) Group(prefix string, opts ...ginadapter.HandlerOption) *ginadapter.Group {
-	return r.Base.Group(prefix, opts...)
+func (r *GinRouter) Group(prefix string, opts ...ginadapter.HandlerOption) *GinGroup {
+	return &GinGroup{prefix: prefix, opts: opts, r: r}
+}
+
+func joinGin(prefix, p string) string {
+	if prefix == "" {
+		return p
+	}
+	if p == "" {
+		return prefix
+	}
+	// keep it simple: mimic adapter join behavior
+	if !strings.HasPrefix(prefix, "/") {
+		prefix = "/" + prefix
+	}
+	if strings.HasSuffix(prefix, "/") {
+		prefix = strings.TrimSuffix(prefix, "/")
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return prefix + p
+}
+
+func (g *GinGroup) Handle(method, path string, h ginlib.HandlerFunc, opts ...ginadapter.HandlerOption) {
+	all := make([]ginadapter.HandlerOption, 0, len(g.opts)+len(opts))
+	all = append(all, g.opts...)
+	all = append(all, opts...)
+	g.r.Handle(method, joinGin(g.prefix, path), h, all...)
+}
+
+func (g *GinGroup) GET(path string, h ginlib.HandlerFunc, opts ...ginadapter.HandlerOption) {
+	g.Handle(http.MethodGet, path, h, opts...)
+}
+func (g *GinGroup) POST(path string, h ginlib.HandlerFunc, opts ...ginadapter.HandlerOption) {
+	g.Handle(http.MethodPost, path, h, opts...)
+}
+func (g *GinGroup) PUT(path string, h ginlib.HandlerFunc, opts ...ginadapter.HandlerOption) {
+	g.Handle(http.MethodPut, path, h, opts...)
+}
+func (g *GinGroup) PATCH(path string, h ginlib.HandlerFunc, opts ...ginadapter.HandlerOption) {
+	g.Handle(http.MethodPatch, path, h, opts...)
+}
+func (g *GinGroup) DELETE(path string, h ginlib.HandlerFunc, opts ...ginadapter.HandlerOption) {
+	g.Handle(http.MethodDelete, path, h, opts...)
 }
 
 func (r *GinRouter) Handle(method, path string, h ginlib.HandlerFunc, opts ...ginadapter.HandlerOption) {

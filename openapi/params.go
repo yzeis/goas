@@ -55,6 +55,21 @@ func WithPathParam(name string, typ ParamType, required bool, description string
 	}
 }
 
+// HeaderParam describes a header parameter for OpenAPI generation.
+type HeaderParam struct {
+	Name        string
+	Type        ParamType
+	Required    bool
+	Description string
+}
+
+// WithHeaderParams declares header parameters for a route for OpenAPI generation.
+func WithHeaderParams(params ...HeaderParam) HandlerOption {
+	return func(meta *RouteMeta) {
+		meta.HeaderParams = append(meta.HeaderParams, params...)
+	}
+}
+
 func openapiTypeToSchemaType(t ParamType) *openapi3.Types {
 	switch t {
 	case ParamInteger:
@@ -79,6 +94,22 @@ func addQueryParams(op *openapi3.Operation, qps []QueryParam) {
 			Required:    qp.Required,
 			Description: qp.Description,
 			Schema:      &openapi3.SchemaRef{Value: &openapi3.Schema{Type: openapiTypeToSchemaType(qp.Type)}},
+		}
+		op.AddParameter(p)
+	}
+}
+
+func addHeaderParams(op *openapi3.Operation, hps []HeaderParam) {
+	for _, hp := range hps {
+		if strings.TrimSpace(hp.Name) == "" {
+			continue
+		}
+		p := &openapi3.Parameter{
+			Name:        hp.Name,
+			In:          openapi3.ParameterInHeader,
+			Required:    hp.Required,
+			Description: hp.Description,
+			Schema:      &openapi3.SchemaRef{Value: &openapi3.Schema{Type: openapiTypeToSchemaType(hp.Type)}},
 		}
 		op.AddParameter(p)
 	}

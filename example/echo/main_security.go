@@ -34,20 +34,20 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
-	spec := simple.Spec{
-		"GET /secure/users": {
-			Tags:      []string{"Secure Users"},
-			Security:  &bearer,
-			ResSchema: []SecUser{},
-			Status:    http.StatusOK,
-		},
-		"POST /secure/users": {
-			Tags:      []string{"Secure Users"},
-			Security:  &apiKey,
-			ResSchema: struct{}{},
-			Status:    http.StatusCreated,
-		},
-	}
+	b := simple.NewSpec()
+	b.GroupTags("", []string{"Secure Users"}, func(s *simple.SpecBuilder) {
+		s.GET("/secure/users").Security(&bearer).Res([]SecUser{}).OK()
+		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
+
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
+			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
+		)
+	})
+
+	spec := b.Spec()
 
 	r := simple.NewEcho(base, spec)
 	secure := r.Group("", echo.WithTags("Secure Users"))
@@ -65,6 +65,23 @@ func main() {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return c.NoContent(http.StatusCreated)
+	})
+
+	secure.GET("/secure/demo-errors", func(c echolib.Context) error {
+		auth := c.Request().Header.Get("Authorization")
+		if !strings.HasPrefix(auth, "Bearer ") {
+			return echo.JSON(c, http.StatusUnauthorized, openapi.ErrorResponse{Error: "unauthorized"})
+		}
+		switch c.QueryParam("code") {
+		case "400":
+			return echo.JSON(c, http.StatusBadRequest, openapi.ErrorResponse{Error: "bad request"})
+		case "500":
+			return echo.JSON(c, http.StatusInternalServerError, openapi.ErrorResponse{Error: "internal error"})
+		case "503":
+			return echo.JSON(c, http.StatusServiceUnavailable, openapi.ErrorResponse{Error: "service unavailable"})
+		default:
+			return echo.JSON(c, http.StatusOK, map[string]string{"status": "ok"})
+		}
 	})
 
 	echo.Register(base, cfg)

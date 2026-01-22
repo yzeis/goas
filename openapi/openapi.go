@@ -40,7 +40,7 @@ func Register(r *Router, cfg Config) {
 		cfg.SpecPath = "/openapi.json"
 	}
 	if cfg.SwaggerPath == "" {
-		cfg.SwaggerPath = "/swagger"
+		cfg.SwaggerPath = "/swagger-ui"
 	}
 
 	doc := BuildSpec(r.Routes(), cfg)

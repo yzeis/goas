@@ -26,6 +26,28 @@ func handleCreateUser(c *ginlib.Context) {
 	c.Status(http.StatusCreated)
 }
 
+// handleDemoErrors is a dedicated endpoint to demonstrate common error responses
+// in Swagger UI without mixing demo logic into real business endpoints.
+func handleDemoErrors(c *ginlib.Context) {
+	switch c.GetHeader("X-Demo-Fail") {
+	case "400":
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad request"})
+		return
+	case "401":
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
+		return
+	case "500":
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal error"})
+		return
+	case "503":
+		c.JSON(http.StatusServiceUnavailable, ErrorResponse{Error: "service unavailable"})
+		return
+	default:
+		// success path
+		c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	}
+}
+
 func handleGetUser(c *ginlib.Context) {
 	id := c.Param("id")
 	if id == "404" {

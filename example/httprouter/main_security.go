@@ -36,10 +36,20 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
-	spec := simple.Spec{
-		"GET /secure/users":  {Tags: []string{"Secure Users"}, Security: &bearer, ResSchema: []SecUser{}, Status: http.StatusOK},
-		"POST /secure/users": {Tags: []string{"Secure Users"}, Security: &apiKey, ResSchema: struct{}{}, Status: http.StatusCreated},
-	}
+	b := simple.NewSpec()
+	b.GroupTags("", []string{"Secure Users"}, func(s *simple.SpecBuilder) {
+		s.GET("/secure/users").Security(&bearer).Res([]SecUser{}).OK()
+		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
+
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
+			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
+		)
+	})
+
+	spec := b.Spec()
 
 	r := simple.New(base, spec)
 	secure := r.Group("", openapi.WithTags("Secure Users"))
@@ -61,6 +71,27 @@ func main() {
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
+	})
+
+	secure.GET("/secure/demo-errors", func(w http.ResponseWriter, req *http.Request) {
+		auth := req.Header.Get("Authorization")
+		if !strings.HasPrefix(auth, "Bearer ") {
+			openapi.JSON(w, http.StatusUnauthorized, openapi.ErrorResponse{Error: "unauthorized"})
+			return
+		}
+		switch req.URL.Query().Get("code") {
+		case "400":
+			openapi.JSON(w, http.StatusBadRequest, openapi.ErrorResponse{Error: "bad request"})
+			return
+		case "500":
+			openapi.JSON(w, http.StatusInternalServerError, openapi.ErrorResponse{Error: "internal error"})
+			return
+		case "503":
+			openapi.JSON(w, http.StatusServiceUnavailable, openapi.ErrorResponse{Error: "service unavailable"})
+			return
+		default:
+			openapi.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		}
 	})
 
 	openapi.Register(base, cfg)

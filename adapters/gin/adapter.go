@@ -141,7 +141,7 @@ func (r *Router) OPTIONS(path string, h ginlib.HandlerFunc, opts ...HandlerOptio
 
 func (r *Router) Routes() []openapi.RouteMeta { return r.routes }
 
-// Register mounts /openapi.json and /swagger and uses captured routes.
+// Register mounts /openapi.json and Swagger UI and uses captured routes.
 func Register(r *Router, cfg openapi.Config) {
 	doc := openapi.BuildSpec(r.routes, cfg)
 
@@ -149,18 +149,27 @@ func Register(r *Router, cfg openapi.Config) {
 	if specPath == "" {
 		specPath = "/openapi.json"
 	}
-	swagPath := cfg.SwaggerPath
-	if swagPath == "" {
-		swagPath = "/swagger"
+
+	mount := cfg.SwaggerPath
+	if mount == "" {
+		mount = "/swagger-ui"
 	}
+	mount = strings.TrimSuffix(mount, "/")
+	indexPath := mount + "/index.html"
 
 	r.Engine.GET(specPath, func(c *ginlib.Context) {
 		c.Header("Content-Type", "application/json")
 		c.JSON(200, doc)
 	})
 
-	// Minimal swagger UI (same html as openapi/ui)
-	r.Engine.GET(swagPath, func(c *ginlib.Context) {
+	redirect := func(c *ginlib.Context) {
+		c.Redirect(http.StatusFound, indexPath+"#/")
+	}
+
+	// Canonical swagger UI paths
+	r.Engine.GET(mount, redirect)
+	r.Engine.GET(mount+"/", redirect)
+	r.Engine.GET(indexPath, func(c *ginlib.Context) {
 		c.Header("Content-Type", "text/html")
 		c.String(200, `<!DOCTYPE html>
 <html>
@@ -180,6 +189,10 @@ SwaggerUIBundle({
 </body>
 </html>`)
 	})
+
+	// Legacy /swagger redirect
+	r.Engine.GET("/swagger", redirect)
+	r.Engine.GET("/swagger/", redirect)
 }
 
 // Helpers for gin

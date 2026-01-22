@@ -30,50 +30,21 @@ type CreateUser struct {
 func main() {
 	base := openapi.NewRouter()
 
-	spec := simple.Spec{
-		"GET /users": {
-			Tags:      []string{"Users"},
-			ResSchema: []User{},
-			Status:    http.StatusOK,
-		},
-		"GET /search": {
-			Tags: []string{"Users"},
-			QueryParams: []openapi.QueryParam{
-				{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
-				{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
-			},
-			ResSchema: struct{}{},
-			Status:    http.StatusOK,
-		},
-		"POST /users": {
-			Tags:      []string{"Users"},
-			ReqSchema: CreateUser{},
-			ResSchema: struct{}{},
-			Status:    http.StatusCreated,
-		},
-		"GET /users/{id}": {
-			Tags:      []string{"Users"},
-			ResSchema: User{},
-			Status:    http.StatusOK,
-		},
-		"PUT /users/{id}": {
-			Tags:      []string{"Users"},
-			ReqSchema: UpdateUser{},
-			ResSchema: User{},
-			Status:    http.StatusOK,
-		},
-		"PATCH /users/{id}": {
-			Tags:      []string{"Users"},
-			ReqSchema: UpdateUser{},
-			ResSchema: User{},
-			Status:    http.StatusOK,
-		},
-		"DELETE /users/{id}": {
-			Tags:      []string{"Users"},
-			ResSchema: struct{}{},
-			Status:    http.StatusNoContent,
-		},
-	}
+	b := simple.NewSpec()
+	b.GroupTags("", []string{"Users"}, func(s *simple.SpecBuilder) {
+		s.GET("/users").Res([]User{}).OK()
+		s.GET("/search").Query(
+			openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
+			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
+		).Res(struct{}{}).OK()
+		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Status(http.StatusCreated)
+		s.GET("/users/{id}").Res(User{}).OK()
+		s.PUT("/users/{id}").Req(UpdateUser{}).Res(User{}).OK()
+		s.PATCH("/users/{id}").Req(UpdateUser{}).Res(User{}).OK()
+		s.DELETE("/users/{id}").Res(struct{}{}).NoContent()
+	})
+
+	spec := b.Spec()
 
 	r := simple.New(base, spec)
 

@@ -20,6 +20,7 @@ type RouteMeta struct {
 	Responses      []ResponseSpec
 	Security       *openapi3.SecurityRequirement
 	QueryParams    []QueryParam
+	HeaderParams   []HeaderParam
 	PathParams     []PathParamSpec
 }
 

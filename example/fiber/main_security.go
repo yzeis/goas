@@ -34,10 +34,21 @@ func main() {
 	bearer := openapi3.NewSecurityRequirement().Authenticate("bearerAuth")
 	apiKey := openapi3.NewSecurityRequirement().Authenticate("apiKeyAuth")
 
-	spec := simple.Spec{
-		"GET /secure/users":  {Tags: []string{"Secure Users"}, Security: &bearer, ResSchema: []SecUser{}, Status: http.StatusOK},
-		"POST /secure/users": {Tags: []string{"Secure Users"}, Security: &apiKey, ResSchema: struct{}{}, Status: http.StatusCreated},
-	}
+	b := simple.NewSpec()
+	b.GroupTags("", []string{"Secure Users"}, func(s *simple.SpecBuilder) {
+		s.GET("/secure/users").Security(&bearer).Res([]SecUser{}).OK()
+		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
+
+		// Error showcase: helps Swagger UI show error schemas in security mode.
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
+			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
+		)
+	})
+
+	spec := b.Spec()
 
 	r := simple.NewFiber(base, spec)
 	secure := r.Group("", fiber.WithTags("Secure Users"))
@@ -55,6 +66,22 @@ func main() {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
 		return c.SendStatus(http.StatusCreated)
+	})
+
+	secure.GET("/secure/demo-errors", func(c *fiberlib.Ctx) error {
+		if !strings.HasPrefix(c.Get("Authorization"), "Bearer ") {
+			return c.SendStatus(http.StatusUnauthorized)
+		}
+		switch c.Query("code") {
+		case "400":
+			return fiber.JSON(c, http.StatusBadRequest, openapi.ErrorResponse{Error: "bad request"})
+		case "500":
+			return fiber.JSON(c, http.StatusInternalServerError, openapi.ErrorResponse{Error: "internal error"})
+		case "503":
+			return fiber.JSON(c, http.StatusServiceUnavailable, openapi.ErrorResponse{Error: "service unavailable"})
+		default:
+			return fiber.JSON(c, http.StatusOK, map[string]string{"status": "ok"})
+		}
 	})
 
 	fiber.Register(base, cfg)

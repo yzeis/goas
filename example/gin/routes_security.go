@@ -3,8 +3,6 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/aizacoders/openapigo/adapters/gin"
@@ -30,31 +28,25 @@ func openAPICfgSecurity() (openapi.Config, *openapi3.SecurityRequirement, *opena
 }
 
 func registerSecureRoutes(r *simple.GinRouter, bearer, apiKey *openapi3.SecurityRequirement) {
-	spec := r.Spec
-	// enrich existing spec
-	spec["GET /secure/healthz"] = simple.RouteDef{
-		Tags:      []string{"System"},
-		Security:  bearer,
-		ResSchema: map[string]string{},
-		Status:    http.StatusOK,
-	}
-	spec["GET /secure/users"] = simple.RouteDef{
-		Tags:      []string{"Secure Users"},
-		Security:  bearer,
-		ResSchema: []SecUser{},
-		Status:    http.StatusOK,
-	}
-	spec["POST /secure/users"] = simple.RouteDef{
-		Tags:      []string{"Secure Users"},
-		Security:  apiKey,
-		ResSchema: struct{}{},
-		Status:    http.StatusCreated,
-	}
-	r.Spec = spec
+	b := simple.NewSpec()
+	b.GroupTags("", []string{"Secure Users"}, func(s *simple.SpecBuilder) {
+		s.GET("/secure/healthz").Security(bearer).Res(map[string]string{}).OK()
+		s.GET("/secure/users").Security(bearer).Res([]SecUser{}).OK()
+		s.POST("/secure/users").Security(apiKey).Res(struct{}{}).Created()
+
+		s.GET("/secure/demo-errors").Security(bearer).Res(map[string]string{}).OK().Responses(
+			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
+			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
+		)
+	})
+	r.Spec = b.Spec()
 
 	r.GET("/secure/healthz", handleSecureHealthz)
 
 	secure := r.Group("", gin.WithTags("Secure Users"))
 	secure.GET("/secure/users", handleSecureListUsers)
 	secure.POST("/secure/users", handleSecureCreateUser)
+	secure.GET("/secure/demo-errors", handleSecureDemoErrors)
 }

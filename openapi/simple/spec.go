@@ -17,9 +17,10 @@ import (
 //
 // If ReqSchema/ResSchema is nil, schema isn't declared.
 type RouteDef struct {
-	Tags        []string
-	Security    *openapi3.SecurityRequirement
-	QueryParams []openapi.QueryParam
+	Tags         []string
+	Security     *openapi3.SecurityRequirement
+	QueryParams  []openapi.QueryParam
+	HeaderParams []openapi.HeaderParam
 
 	ReqSchema any
 	ResSchema any
@@ -50,6 +51,9 @@ func Inject(opts []openapi.HandlerOption, def RouteDef) []openapi.HandlerOption 
 	}
 	if len(def.QueryParams) > 0 {
 		out = append(out, openapi.WithQueryParams(def.QueryParams...))
+	}
+	if len(def.HeaderParams) > 0 {
+		out = append(out, openapi.WithHeaderParams(def.HeaderParams...))
 	}
 	if def.ReqSchema != nil || def.ResSchema != nil || def.Status != 0 {
 		out = append(out, openapi.JSONRoute(def.ReqSchema, def.ResSchema, def.Status)...)

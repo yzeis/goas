@@ -74,16 +74,24 @@ func Register(r *Router, cfg openapi.Config) {
 	if specPath == "" {
 		specPath = "/openapi.json"
 	}
-	swagPath := cfg.SwaggerPath
-	if swagPath == "" {
-		swagPath = "/swagger"
+	mount := cfg.SwaggerPath
+	if mount == "" {
+		mount = "/swagger-ui"
 	}
+	mount = strings.TrimSuffix(mount, "/")
+	indexPath := mount + "/index.html"
 
 	r.App.Get(specPath, func(c *fiberlib.Ctx) error {
 		return c.Status(200).JSON(doc)
 	})
 
-	r.App.Get(swagPath, func(c *fiberlib.Ctx) error {
+	redirect := func(c *fiberlib.Ctx) error {
+		return c.Redirect(indexPath+"#/", http.StatusFound)
+	}
+
+	r.App.Get(mount, redirect)
+	r.App.Get(mount+"/", redirect)
+	r.App.Get(indexPath, func(c *fiberlib.Ctx) error {
 		c.Set("Content-Type", "text/html")
 		return c.Status(200).SendString(`<!DOCTYPE html>
 <html>
@@ -103,6 +111,10 @@ SwaggerUIBundle({
 </body>
 </html>`)
 	})
+
+	// Legacy /swagger redirect
+	r.App.Get("/swagger", redirect)
+	r.App.Get("/swagger/", redirect)
 }
 
 func Bind(c *fiberlib.Ctx, v interface{}) error           { return c.BodyParser(v) }

@@ -74,16 +74,24 @@ func Register(r *Router, cfg openapi.Config) {
 	if specPath == "" {
 		specPath = "/openapi.json"
 	}
-	swagPath := cfg.SwaggerPath
-	if swagPath == "" {
-		swagPath = "/swagger"
+	mount := cfg.SwaggerPath
+	if mount == "" {
+		mount = "/swagger-ui"
 	}
+	mount = strings.TrimSuffix(mount, "/")
+	indexPath := mount + "/index.html"
 
 	r.Echo.GET(specPath, func(c echolib.Context) error {
 		return c.JSON(200, doc)
 	})
 
-	r.Echo.GET(swagPath, func(c echolib.Context) error {
+	redirect := func(c echolib.Context) error {
+		return c.Redirect(http.StatusFound, indexPath+"#/")
+	}
+
+	r.Echo.GET(mount, redirect)
+	r.Echo.GET(mount+"/", redirect)
+	r.Echo.GET(indexPath, func(c echolib.Context) error {
 		return c.HTML(200, `<!DOCTYPE html>
 <html>
 <head>
@@ -102,6 +110,10 @@ SwaggerUIBundle({
 </body>
 </html>`)
 	})
+
+	// Legacy /swagger redirect
+	r.Echo.GET("/swagger", redirect)
+	r.Echo.GET("/swagger/", redirect)
 }
 
 func Bind(c echolib.Context, v interface{}) error           { return c.Bind(v) }

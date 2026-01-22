@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aizacoders/openapigo/openapi"
 	ginlib "github.com/gin-gonic/gin"
 )
 
@@ -45,4 +46,24 @@ func handleSecureCreateUser(c *ginlib.Context) {
 		return
 	}
 	c.Status(http.StatusCreated)
+}
+
+func handleSecureDemoErrors(c *ginlib.Context) {
+	if !requireBearer(c) {
+		c.JSON(http.StatusUnauthorized, openapi.ErrorResponse{Error: "unauthorized"})
+		return
+	}
+	switch c.Query("code") {
+	case "400":
+		c.JSON(http.StatusBadRequest, openapi.ErrorResponse{Error: "bad request"})
+		return
+	case "500":
+		c.JSON(http.StatusInternalServerError, openapi.ErrorResponse{Error: "internal error"})
+		return
+	case "503":
+		c.JSON(http.StatusServiceUnavailable, openapi.ErrorResponse{Error: "service unavailable"})
+		return
+	default:
+		c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	}
 }

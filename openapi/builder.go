@@ -95,6 +95,11 @@ func BuildSpec(routes []RouteMeta, cfg Config) *openapi3.T {
 			addQueryParams(op, route.QueryParams)
 		}
 
+		// Header parameters (declared via WithHeaderParams)
+		if len(route.HeaderParams) > 0 {
+			addHeaderParams(op, route.HeaderParams)
+		}
+
 		if route.RequestSchema != nil {
 			schemaRef := infer.RequestSchema(doc, route.RequestSchema)
 			op.RequestBody = &openapi3.RequestBodyRef{Value: &openapi3.RequestBody{Required: true, Content: openapi3.NewContentWithJSONSchemaRef(schemaRef)}}

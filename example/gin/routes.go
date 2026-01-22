@@ -3,8 +3,6 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/aizacoders/openapigo/adapters/gin"
@@ -25,6 +23,7 @@ func registerUserRoutes(r *simple.GinRouter) {
 	users.GET("/users", handleListUsers)
 	users.GET("/search", handleSearchUsers)
 	users.POST("/users", handleCreateUser)
+	users.GET("/users/demo-errors", handleDemoErrors)
 	users.GET("/users/:id", handleGetUser)
 	users.PUT("/users/:id", handlePutUser)
 	users.PATCH("/users/:id", handlePatchUser)
@@ -42,22 +41,37 @@ func openAPICfg() openapi.Config {
 }
 
 func springSpec() simple.Spec {
-	return simple.Spec{
-		"GET /healthz": {Tags: []string{"System"}, ResSchema: map[string]string{}, Status: http.StatusOK},
-		"GET /users":   {Tags: []string{"Users"}, ResSchema: []User{}, Status: http.StatusOK},
-		"GET /search": {
-			Tags: []string{"Users"},
-			QueryParams: []openapi.QueryParam{
-				{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
-				{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
-			},
-			ResSchema: struct{}{},
-			Status:    http.StatusOK,
-		},
-		"POST /users":       {Tags: []string{"Users"}, ReqSchema: CreateUser{}, ResSchema: struct{}{}, Status: http.StatusCreated},
-		"GET /users/:id":    {Tags: []string{"Users"}, ResSchema: User{}, Status: http.StatusOK},
-		"PUT /users/:id":    {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
-		"PATCH /users/:id":  {Tags: []string{"Users"}, ReqSchema: UpdateUser{}, ResSchema: User{}, Status: http.StatusOK},
-		"DELETE /users/:id": {Tags: []string{"Users"}, ResSchema: struct{}{}, Status: http.StatusNoContent},
-	}
+	b := simple.NewSpec()
+	b.GroupTags("", []string{"System"}, func(s *simple.SpecBuilder) {
+		s.GET("/healthz").Res(map[string]string{}).OK()
+	})
+	b.GroupTags("", []string{"Users"}, func(s *simple.SpecBuilder) {
+		s.GET("/users").Res([]User{}).OK()
+		s.GET("/search").Query(
+			openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
+			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
+		).Res(struct{}{}).OK()
+
+		// Create user: normal endpoint.
+		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Created().Responses(
+			openapi.ResponseSpec{Status: 400, Schema: ErrorResponse{}},
+			openapi.ResponseSpec{Status: 500, Schema: ErrorResponse{}},
+		)
+
+		// Dedicated error showcase endpoint (doesn't depend on security mode).
+		s.GET("/users/demo-errors").Headers(
+			openapi.HeaderParam{Name: "X-Demo-Fail", Type: openapi.ParamString, Required: false, Description: "Set to 400/401/500/503 to simulate an error"},
+		).Res(map[string]string{}).OK().Responses(
+			openapi.ResponseSpec{Status: 400, Schema: ErrorResponse{}},
+			openapi.ResponseSpec{Status: 401, Schema: ErrorResponse{}},
+			openapi.ResponseSpec{Status: 500, Schema: ErrorResponse{}},
+			openapi.ResponseSpec{Status: 503, Schema: ErrorResponse{}},
+		)
+
+		s.GET("/users/:id").Res(User{}).OK()
+		s.PUT("/users/:id").Req(UpdateUser{}).Res(User{}).OK()
+		s.PATCH("/users/:id").Req(UpdateUser{}).Res(User{}).OK()
+		s.DELETE("/users/:id").Res(struct{}{}).NoContent()
+	})
+	return b.Spec()
 }
