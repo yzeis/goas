@@ -39,12 +39,10 @@ func main() {
 		s.GET("/secure/users").Security(&bearer).Res([]SecUser{}).OK()
 		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
 
-		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
-		)
+		// Upload secure user file: multipart/form-data.
+		s.POST("/secure/users/upload").Security(&apiKey).MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
+
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK()
 	})
 
 	spec := b.Spec()
@@ -65,6 +63,18 @@ func main() {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return c.NoContent(http.StatusCreated)
+	})
+
+	secure.POST("/secure/users/upload", func(c echolib.Context) error {
+		if c.Request().Header.Get("X-API-Key") == "" {
+			return echo.JSON(c, http.StatusUnauthorized, openapi.ErrorResponse{Error: "unauthorized"})
+		}
+		f, err := c.FormFile("file")
+		if err != nil {
+			return echo.JSON(c, http.StatusBadRequest, openapi.ErrorResponse{Error: "missing file"})
+		}
+		note := c.FormValue("note")
+		return echo.JSON(c, http.StatusOK, map[string]string{"filename": f.Filename, "note": note})
 	})
 
 	secure.GET("/secure/demo-errors", func(c echolib.Context) error {

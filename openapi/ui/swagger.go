@@ -1,13 +1,24 @@
 package ui
 
 import (
+	_ "embed"
 	"net/http"
 	"strings"
+	"text/template"
 )
+
+//go:embed templates/swagger-ui.html
+var swaggerUITemplate string
+
+//go:embed templates/favicon.ico
+var openAPIFaviconPNG []byte
+
+var swaggerUITpl = template.Must(template.New("swagger-ui.html").Parse(swaggerUITemplate))
 
 type SwaggerUIConfig struct {
 	MountPath   string // default: /swagger-ui
 	SpecURLPath string // default: /openapi.json
+	Version     string // optional: used for cache busting assets like favicon
 }
 
 func RegisterSwaggerUI(mux interface {
@@ -22,6 +33,21 @@ func RegisterSwaggerUI(mux interface {
 	}
 	mount = strings.TrimSuffix(mount, "/")
 
+	// Standard favicon.ico (most reliable across browsers)
+	mux.Get("/favicon.ico", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Header().Set("Content-Type", "image/png")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(openAPIFaviconPNG)
+	})
+	// Also serve under mount path for setups that expect it there.
+	mux.Get(mount+"/favicon.ico", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Header().Set("Content-Type", "image/png")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(openAPIFaviconPNG)
+	})
+
 	spec := cfg.SpecURLPath
 	if spec == "" {
 		spec = "/openapi.json"
@@ -32,30 +58,17 @@ func RegisterSwaggerUI(mux interface {
 		http.Redirect(w, r, indexPath+"#/", http.StatusFound)
 	}
 
+	ver := cfg.Version
+	if ver == "" {
+		ver = "1"
+	}
+
 	// New canonical paths
 	mux.Get(mount, redirectHTML)
 	mux.Get(mount+"/", redirectHTML)
 	mux.Get(indexPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte(`
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Swagger UI</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
-</head>
-<body>
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script>
-SwaggerUIBundle({
-  url: '` + spec + `',
-  dom_id: '#swagger-ui'
-});
-</script>
-</body>
-</html>
-`))
+		_ = swaggerUITpl.Execute(w, map[string]any{"SpecURL": spec, "MountPath": mount, "Version": ver})
 	})
 
 	// Legacy: /swagger should redirect to new canonical UI.

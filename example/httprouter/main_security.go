@@ -41,12 +41,10 @@ func main() {
 		s.GET("/secure/users").Security(&bearer).Res([]SecUser{}).OK()
 		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
 
-		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
-		)
+		// Upload secure user file: multipart/form-data.
+		s.POST("/secure/users/upload").Security(&apiKey).MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
+
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK()
 	})
 
 	spec := b.Spec()
@@ -71,6 +69,25 @@ func main() {
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
+	})
+
+	secure.POST("/secure/users/upload", func(w http.ResponseWriter, req *http.Request) {
+		if req.Header.Get("X-API-Key") == "" {
+			openapi.JSON(w, http.StatusUnauthorized, openapi.ErrorResponse{Error: "unauthorized"})
+			return
+		}
+		if err := req.ParseMultipartForm(10 << 20); err != nil {
+			openapi.JSON(w, http.StatusBadRequest, openapi.ErrorResponse{Error: "invalid multipart"})
+			return
+		}
+		f, fh, err := req.FormFile("file")
+		if err != nil {
+			openapi.JSON(w, http.StatusBadRequest, openapi.ErrorResponse{Error: "missing file"})
+			return
+		}
+		_ = f.Close()
+		note := req.FormValue("note")
+		openapi.JSON(w, http.StatusOK, map[string]string{"filename": fh.Filename, "note": note})
 	})
 
 	secure.GET("/secure/demo-errors", func(w http.ResponseWriter, req *http.Request) {

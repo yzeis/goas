@@ -77,6 +77,12 @@ func namedStructSchema(doc *openapi3.T, t reflect.Type) *openapi3.Schema {
 			ft = ft.Elem()
 		}
 
+		// Special-case: openapi.MultipartFile
+		if ft.PkgPath() == "github.com/aizacoders/openapigo/openapi" && ft.Name() == "MultipartFile" {
+			s.Properties[name] = &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{"string"}, Format: "binary"}}
+			continue
+		}
+
 		if ft.Kind() == reflect.Slice || ft.Kind() == reflect.Array {
 			it := ft.Elem()
 			if it.Kind() == reflect.Ptr {

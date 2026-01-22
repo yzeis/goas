@@ -41,6 +41,10 @@ func main() {
 			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
 		).Res(struct{}{}).OK()
 		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Created()
+
+		// Upload user file: multipart/form-data.
+		s.POST("/users/upload").MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
+
 		s.GET("/users/:id").Res(User{}).OK()
 		s.PUT("/users/:id").Req(UpdateUser{}).Res(User{}).OK()
 		s.PATCH("/users/:id").Req(UpdateUser{}).Res(User{}).OK()
@@ -68,6 +72,15 @@ func main() {
 			return nil
 		}
 		return c.SendStatus(http.StatusCreated)
+	})
+
+	users.POST("/users/upload", func(c *fiberlib.Ctx) error {
+		fh, err := c.FormFile("file")
+		if err != nil {
+			return fiber.JSON(c, http.StatusBadRequest, ErrorResponse{Error: "missing file"})
+		}
+		note := c.FormValue("note")
+		return fiber.JSON(c, http.StatusOK, map[string]string{"filename": fh.Filename, "note": note})
 	})
 
 	users.GET("/users/:id", func(c *fiberlib.Ctx) error {

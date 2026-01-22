@@ -39,13 +39,11 @@ func main() {
 		s.GET("/secure/users").Security(&bearer).Res([]SecUser{}).OK()
 		s.POST("/secure/users").Security(&apiKey).Res(struct{}{}).Created()
 
+		// Upload secure user file: multipart/form-data.
+		s.POST("/secure/users/upload").Security(&apiKey).MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
+
 		// Error showcase: helps Swagger UI show error schemas in security mode.
-		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
-		)
+		s.GET("/secure/demo-errors").Security(&bearer).Res(map[string]string{}).OK()
 	})
 
 	spec := b.Spec()
@@ -66,6 +64,18 @@ func main() {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
 		return c.SendStatus(http.StatusCreated)
+	})
+
+	secure.POST("/secure/users/upload", func(c *fiberlib.Ctx) error {
+		if c.Get("X-API-Key") == "" {
+			return fiber.JSON(c, http.StatusUnauthorized, openapi.ErrorResponse{Error: "unauthorized"})
+		}
+		fh, err := c.FormFile("file")
+		if err != nil {
+			return fiber.JSON(c, http.StatusBadRequest, openapi.ErrorResponse{Error: "missing file"})
+		}
+		note := c.FormValue("note")
+		return fiber.JSON(c, http.StatusOK, map[string]string{"filename": fh.Filename, "note": note})
 	})
 
 	secure.GET("/secure/demo-errors", func(c *fiberlib.Ctx) error {

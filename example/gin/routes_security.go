@@ -12,8 +12,9 @@ import (
 
 func openAPICfgSecurity() (openapi.Config, *openapi3.SecurityRequirement, *openapi3.SecurityRequirement) {
 	cfg := openapi.Config{
-		Title:   "User API (Gin + Security)",
-		Version: "1.0.0",
+		Title:       "User API (Gin + Security)",
+		Version:     "1.0.0",
+		Description: "An example API with secured endpoints using Gin and OpenAPIGO",
 		Tags: openapi3.Tags{
 			{Name: "Secure Users", Description: "Secured endpoints (Bearer / X-API-Key)"},
 		},
@@ -34,12 +35,10 @@ func registerSecureRoutes(r *simple.GinRouter, bearer, apiKey *openapi3.Security
 		s.GET("/secure/users").Security(bearer).Res([]SecUser{}).OK()
 		s.POST("/secure/users").Security(apiKey).Res(struct{}{}).Created()
 
-		s.GET("/secure/demo-errors").Security(bearer).Res(map[string]string{}).OK().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 401, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: openapi.ErrorResponse{}},
-			openapi.ResponseSpec{Status: 503, Schema: openapi.ErrorResponse{}},
-		)
+		// Upload secure user file: multipart/form-data.
+		s.POST("/secure/users/upload").Security(apiKey).MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
+
+		s.GET("/secure/demo-errors").Security(bearer).Res(map[string]string{}).OK()
 	})
 	r.Spec = b.Spec()
 
@@ -48,5 +47,6 @@ func registerSecureRoutes(r *simple.GinRouter, bearer, apiKey *openapi3.Security
 	secure := r.Group("", gin.WithTags("Secure Users"))
 	secure.GET("/secure/users", handleSecureListUsers)
 	secure.POST("/secure/users", handleSecureCreateUser)
+	secure.POST("/secure/users/upload", handleSecureUploadUserFile)
 	secure.GET("/secure/demo-errors", handleSecureDemoErrors)
 }

@@ -9,6 +9,7 @@ import (
 	echolib "github.com/labstack/echo/v4"
 
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/ui"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
@@ -92,23 +93,9 @@ func Register(r *Router, cfg openapi.Config) {
 	r.Echo.GET(mount, redirect)
 	r.Echo.GET(mount+"/", redirect)
 	r.Echo.GET(indexPath, func(c echolib.Context) error {
-		return c.HTML(200, `<!DOCTYPE html>
-<html>
-<head>
-  <title>Swagger UI</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
-</head>
-<body>
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script>
-SwaggerUIBundle({
-  url: '`+specPath+`',
-  dom_id: '#swagger-ui'
-});
-</script>
-</body>
-</html>`)
+		c.Response().Header().Set("Content-Type", "text/html")
+		ui.WriteSwaggerUIHTML(c.Response().Writer, ui.SwaggerUIConfig{SpecURLPath: specPath})
+		return nil
 	})
 
 	// Legacy /swagger redirect

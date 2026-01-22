@@ -1,94 +1,42 @@
-# Openapigo
+# OpenAPIGO
 
-Auto-generate OpenAPI 3.0 spec from your Go route registrations.
+Auto-generate **OpenAPI 3.x** from your Go route registrations.
 
-## Features (current)
-- `openapi.Register()` exposes:
-  - `GET /openapi.json`
-  - `GET /swagger`
-- Path param inference for OpenAPI style routes: `/users/{id}`
-- Simple schema inference from Go struct tags (request/response samples)
-- JWT (and other) security schemes via `openapi.Config.SecuritySchemes`
-- Default router (net/http) via `openapi.NewRouter()`
-- Optional adapters (build tags): gin / echo / fiber
+The goal is to keep your routing code **clean** (plain `GET/POST/PUT/PATCH/DELETE`) while still producing a good OpenAPI spec + Swagger UI.
 
-## Default (net/http) usage
-See `example/httprouter/main.go`.
+---
 
-## Adapters
-Adapters are behind build tags so the repo stays usable without extra deps.
+## What you get
 
-### Gin
-```bash
-go run -tags gin ./example/gin
-```
+- `GET /openapi.json` (generated OpenAPI document)
+- Swagger UI mounted at:
+  - `http://localhost:8080/swagger-ui/index.html#/`
+  - `/swagger` is kept as a legacy redirect
 
-### Echo
-```bash
-go run -tags echo ./example/echo
-```
+---
 
-### Fiber
-```bash
-go run -tags fiber ./example/fiber
-```
+## Key concepts
 
-## Swagger UI
-Open in browser:
-- `http://localhost:8080/swagger`
+### 1) Base router (net/http + chi)
 
-## Notes / Roadmap
-- Improve schema inference (omitempty, embedded structs, validation tags)
-- Add global `servers[]` and richer config (service name, host, base path)
-- Add query param inference
-- Expand per-route responses (status codes, error schema)
+Use the built-in router:
 
-## Full auto schema (Bind/JSON)
+- `openapi.NewRouter()` → returns an `http.Handler`
+- register routes with `GET/POST/PUT/PATCH/DELETE`
 
-Go doesn't allow generic methods on types, so the fully automatic schema mode is exposed as top-level generic helpers:
+### 2) Config-first spec (SpringBoot-like)
 
-```go
-// No need for WithRequestSchema / WithResponseSchema
-openapi.POSTT[CreateUser, User](r, "/users", func(w http.ResponseWriter, req *http.Request, in CreateUser) (User, int, error) {
-	return User{ID: "1", Name: in.Name}, http.StatusCreated, nil
-})
-```
+Go handlers don’t expose schema information automatically.
+So OpenAPIGO uses a **config-first** approach:
 
-Notes:
-- Use `struct{}` as TReq if the endpoint has no request body.
-- Use `struct{}` as TRes if the endpoint has no JSON response body.
+- put route schemas/tags/security/query/header params in one place using `openapi/simple`
+- keep your handlers clean and readable
 
-## Security examples (Bearer JWT + X-API-Key)
+### 3) Multipart upload support
 
-There are additional examples that demonstrate multiple OpenAPI security schemes and per-route requirements.
-They are guarded by an extra build tag: `security`.
+Use `MultipartUpload(...)` to get `multipart/form-data` request bodies and a file upload field in Swagger UI.
 
-### net/http (typed)
-```bash
-go run -tags security ./example/httprouter_typed
-```
-
-### Gin (typed + security)
-```bash
-go run -tags "gin,typed,security" ./example/gin
-```
-
-### Echo (typed + security)
-```bash
-go run -tags "echo,typed,security" ./example/echo
-```
-
-### Fiber (typed + security)
-```bash
-go run -tags "fiber,typed,security" ./example/fiber
-```
-
-Once running, open:
-- `http://localhost:8080/swagger`
-
-Try calling endpoints:
-- `POST /secure/users` with `Authorization: Bearer <token>`
-- `GET /secure/users` with `X-API-Key: <key>`
+---
 
 ## Installation
 
@@ -96,11 +44,7 @@ Try calling endpoints:
 go get github.com/aizacoders/openapigo@latest
 ```
 
-Import:
-
-```go
-import "github.com/aizacoders/openapigo/openapi"
-```
+---
 
 ## Minimal example (net/http)
 
@@ -108,10 +52,10 @@ import "github.com/aizacoders/openapigo/openapi"
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/simple"
 )
 
 type User struct {
@@ -120,15 +64,158 @@ type User struct {
 }
 
 func main() {
-	r := openapi.NewRouter()
+	base := openapi.NewRouter()
 
-	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode([]User{{ID: "1", Name: "Alice"}})
+	// 1) Define spec (grouped, clean)
+	b := simple.NewSpec()
+	b.GroupTags("", []string{"Users"}, func(s *simple.SpecBuilder) {
+		s.GET("/users").Res([]User{}).OK()
 	})
 
-	openapi.Register(r, openapi.Config{Title: "User API", Version: "1.0.0"})
+	// 2) Mount routes (plain net/http handlers)
+	r := simple.New(base, b.Spec())
+	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
+		openapi.JSON(w, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
+	})
+
+	// 3) Register OpenAPI + Swagger UI
+	openapi.Register(base, openapi.Config{Title: "User API", Version: "1.0.0"})
 	_ = http.ListenAndServe(":8080", r)
 }
 ```
 
-For more detailed usage, please refer to the [examples](./example) directory.
+---
+
+## Multipart upload example
+
+In your spec:
+
+```go
+s.POST("/users/upload").MultipartUpload(
+	"file",
+	openapi.MultipartField{Name: "note", Type: openapi.ParamString},
+).Res(map[string]string{}).OK()
+```
+
+In Swagger UI this will show:
+- `file` as file chooser
+- `note` as text input
+- requestBody content type: `multipart/form-data`
+
+---
+
+## Security
+
+You can provide security schemes via `openapi.Config.SecuritySchemes` and attach requirements per-route.
+Examples include two schemes:
+
+- **Bearer** JWT (`Authorization: Bearer <token>`)
+- **API key** (`X-API-Key: <key>`)
+
+---
+
+## Examples (recommended)
+
+Run examples and open Swagger UI:
+
+- http://localhost:8080/swagger-ui/index.html#/
+
+### Default (net/http)
+
+- Docs: [`EXAMPLE_HTTPROUTER.md`](./EXAMPLE_HTTPROUTER.md)
+  (See the doc above for run commands, endpoints, security, and upload sample.)
+
+### Gin
+
+- Docs: [`EXAMPLE_GIN.md`](./EXAMPLE_GIN.md)
+  (See the doc above for run commands, endpoints, security, and upload sample.)
+
+### Echo
+
+- Docs: [`EXAMPLE_ECHO.md`](./EXAMPLE_ECHO.md)
+  (See the doc above for run commands, endpoints, security, and upload sample.)
+
+### Fiber
+
+- Docs: [`EXAMPLE_FIBER.md`](./EXAMPLE_FIBER.md)
+  (See the doc above for run commands, endpoints, security, and upload sample.)
+
+---
+
+## Current support (today)
+
+OpenAPIGO is currently focused on **4 frameworks/router setups**:
+
+1. **net/http (built-in `openapi.Router` based on chi)**
+2. **Gin** (build tag: `gin`)
+3. **Echo** (build tag: `echo`)
+4. **Fiber** (build tag: `fiber`)
+
+Notes:
+- Other frameworks may be added later, but the repo intentionally stays small and dependency-light.
+- Adapters are behind build tags so you can use the core package without pulling extra dependencies.
+
+---
+
+## Roadmap / future updates
+
+The direction going forward:
+
+- **Keep the public API simple**:
+  - common HTTP methods only: `GET/POST/PUT/PATCH/DELETE`
+  - grouping via `Group(...)`
+  - OpenAPI metadata via config-first spec (`openapi/simple`)
+
+- **Improve schema inference gradually**:
+  - better tag support (`omitempty`, pointer handling)
+  - better nested struct handling
+  - better multipart documentation
+
+- **Better DX in Swagger UI**:
+  - theming improvements
+  - cleaner auth UX
+  - consistent error schemas
+
+- **Adapter expansion (optional)**:
+  - If more frameworks are added, they will follow the same pattern:
+    - keep handlers/framework usage idiomatic
+    - keep OpenAPIGO integration minimal
+    - keep core library independent of adapter dependencies
+
+### Update policy / compatibility
+
+- The project is evolving quickly.
+- We aim to keep the **core API stable** (`openapi.Router`, `openapi.Register`, and `openapi/simple`).
+- Adapter APIs may change as we simplify integration and keep parity across frameworks.
+
+### Framework support timeline
+
+For now OpenAPIGO only ships examples + adapters for:
+- `net/http` (built-in router)
+- Gin
+- Echo
+- Fiber
+
+Additional frameworks are considered **future work** (optional adapters behind build tags).
+
+### How to add another framework (adapter concept)
+
+If you want to support another framework, the recommended approach is:
+
+- Create a new adapter package under `adapters/<framework>`.
+- Guard it with a build tag (so the dependency stays optional).
+- The adapter should expose a router wrapper similar to the existing ones:
+  - register `GET/POST/PUT/PATCH/DELETE`
+  - keep grouping if the framework supports groups
+  - call `openapi.Router.Handle(...)` / attach `HandlerOption`s in the same way.
+
+For a starting point, check:
+- `adapters/gin`
+- `adapters/echo`
+- `adapters/fiber`
+
+---
+
+## License
+
+MIT. See [`LICENSE`](./LICENSE).

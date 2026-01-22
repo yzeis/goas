@@ -23,6 +23,7 @@ func registerUserRoutes(r *simple.GinRouter) {
 	users.GET("/users", handleListUsers)
 	users.GET("/search", handleSearchUsers)
 	users.POST("/users", handleCreateUser)
+	users.POST("/users/upload", handleUploadUserFile)
 	users.GET("/users/demo-errors", handleDemoErrors)
 	users.GET("/users/:id", handleGetUser)
 	users.PUT("/users/:id", handlePutUser)
@@ -53,20 +54,15 @@ func springSpec() simple.Spec {
 		).Res(struct{}{}).OK()
 
 		// Create user: normal endpoint.
-		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Created().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: ErrorResponse{}},
-		)
+		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Created()
+
+		// Upload user file: multipart/form-data.
+		s.POST("/users/upload").MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
 
 		// Dedicated error showcase endpoint (doesn't depend on security mode).
 		s.GET("/users/demo-errors").Headers(
 			openapi.HeaderParam{Name: "X-Demo-Fail", Type: openapi.ParamString, Required: false, Description: "Set to 400/401/500/503 to simulate an error"},
-		).Res(map[string]string{}).OK().Responses(
-			openapi.ResponseSpec{Status: 400, Schema: ErrorResponse{}},
-			openapi.ResponseSpec{Status: 401, Schema: ErrorResponse{}},
-			openapi.ResponseSpec{Status: 500, Schema: ErrorResponse{}},
-			openapi.ResponseSpec{Status: 503, Schema: ErrorResponse{}},
-		)
+		).Res(map[string]string{}).OK()
 
 		s.GET("/users/:id").Res(User{}).OK()
 		s.PUT("/users/:id").Req(UpdateUser{}).Res(User{}).OK()

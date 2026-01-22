@@ -9,6 +9,7 @@ import (
 	fiberlib "github.com/gofiber/fiber/v2"
 
 	"github.com/aizacoders/openapigo/openapi"
+	"github.com/aizacoders/openapigo/openapi/ui"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
@@ -93,23 +94,8 @@ func Register(r *Router, cfg openapi.Config) {
 	r.App.Get(mount+"/", redirect)
 	r.App.Get(indexPath, func(c *fiberlib.Ctx) error {
 		c.Set("Content-Type", "text/html")
-		return c.Status(200).SendString(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Swagger UI</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
-</head>
-<body>
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script>
-SwaggerUIBundle({
-  url: '` + specPath + `',
-  dom_id: '#swagger-ui'
-});
-</script>
-</body>
-</html>`)
+		ui.WriteSwaggerUIHTML(c.Context().Response.BodyWriter(), ui.SwaggerUIConfig{SpecURLPath: specPath})
+		return nil
 	})
 
 	// Legacy /swagger redirect
