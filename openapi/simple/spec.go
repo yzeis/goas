@@ -56,7 +56,19 @@ func Inject(opts []openapi.HandlerOption, def RouteDef) []openapi.HandlerOption 
 		out = append(out, openapi.WithHeaderParams(def.HeaderParams...))
 	}
 	if def.ReqSchema != nil || def.ResSchema != nil || def.Status != 0 {
-		out = append(out, openapi.JSONRoute(def.ReqSchema, def.ResSchema, def.Status)...)
+		if def.ReqSchema != nil {
+			out = append(out, openapi.WithRequestSchema(def.ReqSchema))
+		}
+		if def.ResSchema != nil {
+			out = append(out, openapi.WithResponseSchema(def.ResSchema))
+		}
+		if def.ResSchema != nil || def.Status != 0 {
+			status := def.Status
+			if status == 0 {
+				status = 200
+			}
+			out = append(out, openapi.WithResponses(openapi.ResponseSpec{Status: status, Schema: def.ResSchema}))
+		}
 	}
 	if len(def.Responses) > 0 {
 		out = append(out, openapi.WithResponses(def.Responses...))
