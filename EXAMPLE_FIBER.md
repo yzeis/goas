@@ -7,13 +7,13 @@ Fiber example uses the same config-first style with `openapi/simple`.
 Non-security:
 
 ```bash
-go run -tags fiber ./example/fiber
+go run ./example/fiber
 ```
 
 Security:
 
 ```bash
-go run -tags "fiber,security" ./example/fiber
+go run -tags "security" ./example/fiber
 ```
 
 Swagger UI:
@@ -32,6 +32,7 @@ In Swagger UI it must show a file chooser for `file`.
 
 ## Notes
 
+- Examples now use the adapter `NewFromApp` pattern so you can initialize your Fiber app as usual and wrap it with the adapter before registering OpenAPI.
 - Request/response JSON binding uses adapter helpers.
 - Spec is declared once and injected into the router:
   - `simple.NewFiber(base, spec)`

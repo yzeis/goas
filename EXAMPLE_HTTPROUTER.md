@@ -34,3 +34,7 @@ Uses the same `MultipartUpload(...)` helper in the spec builder.
 
 Historical naming: originally this example used another router.
 Now it uses the built-in `openapi.Router` (chi-based) but we keep the folder name for compatibility.
+
+## Notes
+
+- Examples follow the pattern: build a router/engine, wrap with adapter (when applicable), build spec via `simple.NewSpec()` and then use `simple.New*` wrappers.

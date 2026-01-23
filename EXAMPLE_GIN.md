@@ -7,13 +7,13 @@ This repo uses a **config-first** style (SpringBoot-like): keep routes/handlers 
 Non-security:
 
 ```bash
-go run -tags gin ./example/gin
+go run ./example/gin
 ```
 
 Security (Bearer + X-API-Key):
 
 ```bash
-go run -tags "gin,security" ./example/gin
+go run -tags "security" ./example/gin
 ```
 
 Open Swagger UI:
@@ -64,5 +64,5 @@ See:
 
 ## Notes
 
-- The examples intentionally do not use the removed typed mode.
+- Examples now use the adapter `NewFromEngine` pattern so you can initialize your Gin engine as usual (e.g., `gin.New()` or `gin.Default()`) and then wrap it with the adapter before registering OpenAPI.
 - Response error schemas are auto-included via default error responses in `openapi.Config` (unless disabled).

@@ -7,13 +7,13 @@ This example shows the **config-first** (SpringBoot-like) way to use OpenAPIGO w
 Non-security:
 
 ```bash
-go run -tags echo ./example/echo
+go run ./example/echo
 ```
 
 Security (Bearer + X-API-Key):
 
 ```bash
-go run -tags "echo,security" ./example/echo
+go run -tags "security" ./example/echo
 ```
 
 Swagger UI:
@@ -50,3 +50,7 @@ s.POST("/users/upload").MultipartUpload(
 - API key: `X-API-Key: <key>`
 
 The security examples also include `/secure/demo-errors` for quick error-response preview.
+
+## Notes
+
+- Examples now use the adapter `NewFromEcho` pattern so you can initialize your Echo instance as usual and wrap it with the adapter before registering OpenAPI.
