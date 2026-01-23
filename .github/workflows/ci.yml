@@ -14,21 +14,23 @@ jobs:
         go-version: [1.20, 1.21]
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Cache modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/.cache/go-mod
-            ~/.modcache
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          cache: 'go'
+
+      - name: Show Go version
+        run: |
+          go version
+          go env
+
       - name: Install dependencies
         run: go mod download
+
       - name: Run go vet
         run: go vet ./...
+
       - name: Run tests
         run: go test ./... -v
