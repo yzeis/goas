@@ -3,9 +3,10 @@ package openapi
 import (
 	"context"
 	"net/http"
+	"strings"
+	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/go-chi/chi/v5"
 )
 
 type RouteMeta struct {
@@ -24,8 +25,11 @@ type RouteMeta struct {
 	PathParams     []PathParamSpec
 }
 
+// Router uses a small net/http-backed mux that understands simple path params
+// of the form /users/{id}. This avoids depending on chi while preserving
+// behavior needed by the OpenAPI builder (path param extraction via context).
 type Router struct {
-	Mux    *chi.Mux
+	Mux    *httpMux
 	routes []RouteMeta
 }
 
@@ -36,10 +40,11 @@ func (r *Router) Get(path string, h http.HandlerFunc) {
 
 func NewRouter() *Router {
 	return &Router{
-		Mux: chi.NewRouter(),
+		Mux: newHTTPMux(),
 	}
 }
 
+// HandlerOption configures RouteMeta.
 type HandlerOption func(*RouteMeta)
 
 func WithRequestSchema(schema interface{}) HandlerOption {
@@ -77,8 +82,13 @@ func (r *Router) Handle(method, path string, h http.HandlerFunc, opts ...Handler
 	}
 	r.routes = append(r.routes, meta)
 
+	// Register handler on underlying mux. We wrap the provided handler so the
+	// request context contains the path params under pathParamsKey, just like
+	// previous chi-based implementation expected.
 	r.Mux.MethodFunc(method, path, func(w http.ResponseWriter, req *http.Request) {
-		ctx := context.WithValue(req.Context(), pathParamsKey, getChiURLParam(req))
+		// extract params and set into context
+		params := extractPathParams(path, req.URL.Path)
+		ctx := context.WithValue(req.Context(), pathParamsKey, params)
 		h(w, req.WithContext(ctx))
 	})
 }
@@ -119,14 +129,110 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.Mux.ServeHTTP(w, req)
 }
 
+// extractPathParams extracts params from pattern like /users/{id} and actual
+// path like /users/123 returning map[string]string{"id":"123"}.
+func extractPathParams(pattern, actual string) map[string]string {
+	pParts := splitPath(pattern)
+	aParts := splitPath(actual)
+	out := map[string]string{}
+	if len(pParts) != len(aParts) {
+		return out
+	}
+	for i := range pParts {
+		pp := pParts[i]
+		ap := aParts[i]
+		if strings.HasPrefix(pp, "{") && strings.HasSuffix(pp, "}") {
+			name := strings.Trim(pp, "{}")
+			if name != "" {
+				out[name] = ap
+			}
+		}
+	}
+	return out
+}
+
+func splitPath(p string) []string {
+	p = strings.TrimSuffix(p, "/")
+	if p == "" {
+		return []string{}
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	parts := strings.Split(p, "/")
+	// drop leading empty from split
+	if len(parts) > 0 && parts[0] == "" {
+		parts = parts[1:]
+	}
+	return parts
+}
+
+// httpMux is a tiny net/http-based router supporting MethodFunc and path
+// patterns with {param} placeholders.
+type httpMux struct {
+	mu     sync.RWMutex
+	routes []httpRoute
+}
+
+type httpRoute struct {
+	method  string
+	pattern string
+	h       http.HandlerFunc
+}
+
+func newHTTPMux() *httpMux { return &httpMux{} }
+
+// MethodFunc registers a handler for a method+pattern.
+func (m *httpMux) MethodFunc(method, pattern string, h http.HandlerFunc) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.routes = append(m.routes, httpRoute{method: method, pattern: pattern, h: h})
+}
+
+// ServeHTTP matches first registered route with same method and compatible pattern.
+func (m *httpMux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	m.mu.RLock()
+	routes := append([]httpRoute(nil), m.routes...)
+	m.mu.RUnlock()
+	path := req.URL.Path
+	for _, rt := range routes {
+		if rt.method != req.Method {
+			continue
+		}
+		if matchPattern(rt.pattern, path) {
+			rt.h(w, req)
+			return
+		}
+	}
+	// default: 404
+	http.NotFound(w, req)
+}
+
+func matchPattern(pattern, actual string) bool {
+	pParts := splitPath(pattern)
+	aParts := splitPath(actual)
+	if len(pParts) != len(aParts) {
+		return false
+	}
+	for i := range pParts {
+		pp := pParts[i]
+		ap := aParts[i]
+		if strings.HasPrefix(pp, "{") && strings.HasSuffix(pp, "}") {
+			continue
+		}
+		if pp != ap {
+			return false
+		}
+	}
+	return true
+}
+
 func getChiURLParam(r *http.Request) map[string]string {
-	rctx := chi.RouteContext(r.Context())
-	if rctx == nil {
-		return nil
+	// Backwards-compatible helper: attempt to read params placed into context by our mux.
+	if v := r.Context().Value(pathParamsKey); v != nil {
+		if m, ok := v.(map[string]string); ok {
+			return m
+		}
 	}
-	params := make(map[string]string)
-	for i, key := range rctx.URLParams.Keys {
-		params[key] = rctx.URLParams.Values[i]
-	}
-	return params
+	return nil
 }

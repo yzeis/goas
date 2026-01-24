@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/aizacoders/openapigo/adapters/httprouter"
@@ -28,17 +29,165 @@ type CreateUser struct {
 	Name string `json:"name"`
 }
 
-func main() {
-	base := httprouter.New()
+// --- Handlers for v1 (users group)
+func listUsers(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode([]User{{ID: "1", Name: "Alice"}})
+}
 
+func searchUsers(w http.ResponseWriter, req *http.Request) {
+	_, _, _ = openapi.QueryValue[int](req, "limit")
+	w.WriteHeader(http.StatusOK)
+}
+
+func createUser(w http.ResponseWriter, req *http.Request) {
+	var in CreateUser
+	if err := openapi.Bind(req, &in); err != nil || in.Name == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "invalid body"})
+		return
+	}
+	created := User{ID: "2", Name: in.Name}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(created)
+}
+
+func uploadUserFile(w http.ResponseWriter, req *http.Request) {
+	if err := req.ParseMultipartForm(10 << 20); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "invalid multipart"})
+		return
+	}
+	f, fh, err := req.FormFile("file")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "missing file"})
+		return
+	}
+	_ = f.Close()
+	note := req.FormValue("note")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"filename": fh.Filename, "note": note})
+}
+
+func getUser(w http.ResponseWriter, req *http.Request) {
+	id := openapi.PathValue(req, "id")
+	if id == "404" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "user not found"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(User{ID: id, Name: "Alice"})
+}
+
+func putUser(w http.ResponseWriter, req *http.Request) {
+	id := openapi.PathValue(req, "id")
+	var in UpdateUser
+	if err := openapi.Bind(req, &in); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "invalid body"})
+		return
+	}
+	if id == "404" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "user not found"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(User{ID: id, Name: in.Name})
+}
+
+func patchUser(w http.ResponseWriter, req *http.Request) {
+	id := openapi.PathValue(req, "id")
+	var in UpdateUser
+	if err := openapi.Bind(req, &in); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "invalid body"})
+		return
+	}
+	if id == "404" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "user not found"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(User{ID: id, Name: in.Name})
+}
+
+func deleteUser(w http.ResponseWriter, req *http.Request) {
+	id := openapi.PathValue(req, "id")
+	if id == "404" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "user not found"})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// --- API2 handlers (moved into main.go as requested)
+func api2Hello(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": "hello from api2"})
+}
+
+func api2CreateUser(w http.ResponseWriter, req *http.Request) {
+	var in CreateUser
+	if err := openapi.Bind(req, &in); err != nil || in.Name == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "invalid body"})
+		return
+	}
+	created := User{ID: "100", Name: in.Name}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(created)
+}
+
+func api2GetUser(w http.ResponseWriter, req *http.Request) {
+	id := openapi.PathValue(req, "id")
+	if id == "404" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{Error: "user not found (api2)"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(User{ID: id, Name: "API2 User"})
+}
+
+// openapiSpec builds the OpenAPI spec for the example (keeps main() clean),
+// includes both API v1.0 and v2.0 groups to mirror the routes in main().
+func openapiSpec() simple.Spec {
 	b := simple.NewSpec()
-	b.GroupTags("", []string{"Users"}, func(s *simple.SpecBuilder) {
+
+	// API v1.0 (Users)
+	b.GroupTags("/api/v1.0", []string{"Users"}, func(s *simple.SpecBuilder) {
 		s.GET("/users").Res([]User{}).OK()
 		s.GET("/search").Query(
 			openapi.QueryParam{Name: "q", Type: openapi.ParamString, Required: true, Description: "Search term"},
 			openapi.QueryParam{Name: "limit", Type: openapi.ParamInteger, Required: false, Description: "Max results"},
 		).Res(struct{}{}).OK()
-		s.POST("/users").Req(CreateUser{}).Res(struct{}{}).Status(http.StatusCreated)
+		// Create user returns created resource (status 201)
+		s.POST("/users").Req(CreateUser{}).Res(User{}).Created()
 		// Upload user file: multipart/form-data.
 		s.POST("/users/upload").MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
 		s.GET("/users/{id}").Res(User{}).OK()
@@ -47,89 +196,41 @@ func main() {
 		s.DELETE("/users/{id}").Res(struct{}{}).NoContent()
 	})
 
-	spec := b.Spec()
+	// API v2.0 (Users V2.0) - smaller surface per main.go: hello + users create/get
+	b.GroupTags("/api/v2.0", []string{"Users V2.0"}, func(s *simple.SpecBuilder) {
+		s.GET("/hello").Res(map[string]string{}).OK()
+		// v2 create returns the created user object
+		s.POST("/users").Req(CreateUser{}).Res(User{}).Created()
+		s.GET("/users/{id}").Res(User{}).OK()
+	})
 
+	return b.Spec()
+}
+
+func main() {
+	mux := http.NewServeMux()
+	base := httprouter.New(mux)
+
+	// build OpenAPI spec using helper
+	spec := openapiSpec()
 	r := simple.New(base, spec)
 
 	// Clean routes: just HTTP methods + handlers.
-	r.GET("/users", func(w http.ResponseWriter, _ *http.Request) {
-		openapi.JSON(w, http.StatusOK, []User{{ID: "1", Name: "Alice"}})
-	})
+	users := r.Group("/api/v1.0", openapi.WithTags("Users"))
+	users.GET("/users", listUsers)
+	users.GET("/search", searchUsers)
+	users.POST("/users", createUser)
+	users.POST("/users/upload", uploadUserFile)
+	users.GET("/users/{id}", getUser)
+	users.PUT("/users/{id}", putUser)
+	users.PATCH("/users/{id}", patchUser)
+	users.DELETE("/users/{id}", deleteUser)
 
-	r.GET("/search", func(w http.ResponseWriter, req *http.Request) {
-		_, _, _ = openapi.QueryValue[int](req, "limit")
-		w.WriteHeader(http.StatusOK)
-	})
-
-	r.POST("/users", func(w http.ResponseWriter, req *http.Request) {
-		var in CreateUser
-		if err := openapi.Bind(req, &in); err != nil || in.Name == "" {
-			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-	})
-
-	r.POST("/users/upload", func(w http.ResponseWriter, req *http.Request) {
-		if err := req.ParseMultipartForm(10 << 20); err != nil {
-			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid multipart"})
-			return
-		}
-		f, fh, err := req.FormFile("file")
-		if err != nil {
-			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "missing file"})
-			return
-		}
-		_ = f.Close()
-		note := req.FormValue("note")
-		openapi.JSON(w, http.StatusOK, map[string]string{"filename": fh.Filename, "note": note})
-	})
-
-	r.GET("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
-		id := openapi.PathValue(req, "id")
-		if id == "404" {
-			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
-			return
-		}
-		openapi.JSON(w, http.StatusOK, User{ID: id, Name: "Alice"})
-	})
-
-	r.PUT("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
-		id := openapi.PathValue(req, "id")
-		var in UpdateUser
-		if err := openapi.Bind(req, &in); err != nil {
-			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
-			return
-		}
-		if id == "404" {
-			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
-			return
-		}
-		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	})
-
-	r.PATCH("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
-		id := openapi.PathValue(req, "id")
-		var in UpdateUser
-		if err := openapi.Bind(req, &in); err != nil {
-			openapi.JSON(w, http.StatusBadRequest, ErrorResponse{Error: "invalid body"})
-			return
-		}
-		if id == "404" {
-			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
-			return
-		}
-		openapi.JSON(w, http.StatusOK, User{ID: id, Name: in.Name})
-	})
-
-	r.DELETE("/users/{id}", func(w http.ResponseWriter, req *http.Request) {
-		id := openapi.PathValue(req, "id")
-		if id == "404" {
-			openapi.JSON(w, http.StatusNotFound, ErrorResponse{Error: "user not found"})
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-	})
+	// --- API2: separate group that uses default writer (encoding/json) instead of openapi.JSON
+	api2 := r.Group("/api/v2.0", openapi.WithTags("Users V2.0"))
+	api2.GET("/hello", api2Hello)
+	api2.POST("/users", api2CreateUser)
+	api2.GET("/users/{id}", api2GetUser)
 
 	httprouter.Register(base, openapi.Config{
 		Title:   "User API",
@@ -139,5 +240,7 @@ func main() {
 		},
 	})
 
-	_ = http.ListenAndServe(":8080", r)
+	// Server: ServeMux already has the router mounted by httprouter.New(mux)
+
+	_ = http.ListenAndServe(":8080", mux)
 }

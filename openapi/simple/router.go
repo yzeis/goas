@@ -21,7 +21,9 @@ func (r *Router) Routes() []openapi.RouteMeta                        { return r.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) { r.Base.ServeHTTP(w, req) }
 
 func (r *Router) Group(prefix string, opts ...openapi.HandlerOption) *openapi.Group {
-	return r.Base.Group(prefix, opts...)
+	// Ensure groups created through the simple wrapper route through r.Handle so
+	// spec injection (Inject) is applied for routes registered under the group.
+	return openapi.NewGroup(prefix, opts, r.Handle)
 }
 
 func (r *Router) Handle(method, path string, h http.HandlerFunc, opts ...openapi.HandlerOption) {
