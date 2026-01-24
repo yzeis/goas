@@ -13,13 +13,13 @@ go get github.com/gofiber/fiber/v2@latest
 Run the example:
 
 ```bash
-go run ./example/fiber
+go run ./examples/fiber
 ```
 
 Use `-tags "security"` only when running the security variant:
 
 ```bash
-go run -tags "security" ./example/fiber
+go run -tags "security" ./examples/fiber
 ```
 
 Open Swagger UI:
@@ -41,7 +41,7 @@ import (
     fiberlib "github.com/gofiber/fiber/v2"
     fiberadapter "github.com/aizacoders/openapigo/adapters/fiber"
     "github.com/aizacoders/openapigo/openapi"
-    "github.com/aizacoders/openapigo/openapi/simple"
+    "github.com/aizacoders/openapigo/openapi/oas"
 )
 ```
 
@@ -49,7 +49,7 @@ import (
 
 ```go
 app := fiberlib.New()
-adapter := fiberadapter.NewFromApp(app)
+adapter := fiberadapter.NewFiberAdapters(app)
 ```
 
 3) Build Spec with `simple.NewSpec()`
@@ -81,5 +81,9 @@ adapter.App.Listen(":8080")
 
 6) Notes
 
-- `NewFromApp` allows you to configure middleware and settings on the Fiber app before wrapping it with the adapter.
+- `NewFiberAdapters` lets you configure middleware and settings on the Fiber app before wrapping it with the adapter.
 - Use `MultipartUpload` in the Spec builder to expose file upload in Swagger UI.
+
+### Note about core router
+
+The OpenAPIGO core router is a lightweight net/http-backed mux. Adapter packages (including Fiber) integrate with the core behavior and continue to work as before. If you use the `httprouter` adapter you can optionally mount the router automatically onto a `*http.ServeMux` by calling `httprouter.New(mux)`.

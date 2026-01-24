@@ -19,12 +19,14 @@ The goal is to keep your routing code **clean** (plain `GET/POST/PUT/PATCH/DELET
 
 ## Key concepts
 
-### 1) Base router (net/http + chi)
+### 1) Base router (net/http)
 
 Use the built-in router:
 
-- `openapi.NewRouter()` → returns an `http.Handler`
+- `openapi.NewRouter()` → returns an `http.Handler` (lightweight net/http-backed router)
 - register routes with `GET/POST/PUT/PATCH/DELETE`
+
+Note: the default router implementation used to be chi-backed; it now uses a small net/http-based mux compatible with the project's needs. Adapters for Gin, Echo and Fiber remain available.
 
 ### 2) Config-first spec (SpringBoot-like)
 
@@ -66,6 +68,12 @@ type User struct {
 }
 
 func main() {
+	// If you prefer manual mounting you can do:
+	// mux := http.NewServeMux()
+	// base := openapi.NewRouter()
+	// mux.Handle("/", base)
+	// or simply mount the router directly via the httprouter adapter:
+	// base := httprouter.New(mux) // mounts automatically on provided ServeMux
 	base := openapi.NewRouter()
 
 	// 1) Define spec (grouped, clean)
@@ -82,7 +90,7 @@ func main() {
 
 	// 3) Register OpenAPI + Swagger UI
 	openapi.Register(base, openapi.Config{Title: "User API", Version: "1.0.0"})
-	_ = http.ListenAndServe(":8080", r)
+	_ = http.ListenAndServe(":8080", base)
 }
 ```
 
@@ -229,7 +237,7 @@ handler code clean while still generating OpenAPI and mounting Swagger UI.
 Pattern (recommended):
 
 1. Create your framework engine/app (e.g., `gin`, `echo`, `fiber`).
-2. Wrap it with the adapter `NewFrom*` helper (so the adapter captures route metadata).
+2. Wrap it with the adapter `NewGinAdapters` / `NewEchoAdapters` / `NewFiberAdapters` (so the adapter captures route metadata).
 3. Create the `simple` wrapper using the adapter and your `Spec`.
 4. Register OpenAPI via the adapter `Register` helper and run the engine/app.
 
@@ -241,11 +249,11 @@ Examples:
 import (
     ginlib "github.com/gin-gonic/gin"
     ginadapter "github.com/aizacoders/openapigo/adapters/gin"
-    "github.com/aizacoders/openapigo/openapi/simple"
+    "github.com/aizacoders/openapigo/openapi/oas"
 )
 
 engine := ginlib.New()
-adapter := ginadapter.NewFromEngine(engine)
+adapter := ginadapter.NewGinAdapters(engine)
 sr := simple.NewGin(adapter, mySpec)
 // register routes on sr ...
 ginadapter.Register(adapter, openapi.Config{Title: "My API", Version: "0.1.0"})
@@ -258,11 +266,11 @@ adapter.Engine.Run(":8080")
 import (
     echolib "github.com/labstack/echo/v4"
     echoadapter "github.com/aizacoders/openapigo/adapters/echo"
-    "github.com/aizacoders/openapigo/openapi/simple"
+    "github.com/aizacoders/openapigo/openapi/oas"
 )
 
 base := echolib.New()
-adapter := echoadapter.NewFromEcho(base)
+adapter := echoadapter.NewEchoAdapters(base)
 sr := simple.NewEcho(adapter, mySpec)
 // register routes on sr ...
 echoadapter.Register(adapter, openapi.Config{Title: "My API", Version: "0.1.0"})
@@ -275,11 +283,11 @@ adapter.Echo.Start(":8080")
 import (
     fiberlib "github.com/gofiber/fiber/v2"
     fiberadapter "github.com/aizacoders/openapigo/adapters/fiber"
-    "github.com/aizacoders/openapigo/openapi/simple"
+    "github.com/aizacoders/openapigo/openapi/oas"
 )
 
 app := fiberlib.New()
-adapter := fiberadapter.NewFromApp(app)
+adapter := fiberadapter.NewFiberAdapters(app)
 sr := simple.NewFiber(adapter, mySpec)
 // register routes on sr ...
 fiberadapter.Register(adapter, openapi.Config{Title: "My API", Version: "0.1.0"})
@@ -287,7 +295,7 @@ adapter.App.Listen(":8080")
 ```
 
 Notes:
-- The `NewFrom*` helpers let you keep your preferred engine/app initialization (e.g., `gin.Default()`), while still enabling OpenAPIGO to capture route metadata.
+- The `New*Adapters` helpers let you keep your preferred engine/app initialization (e.g., `gin.Default()`), while still enabling OpenAPIGO to capture route metadata.
 - If you previously built with `-tags`, adapters are now compiled by default — no need to use build tags to get adapter implementations.
 
 ---

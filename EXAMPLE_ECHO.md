@@ -13,13 +13,13 @@ go get github.com/labstack/echo/v4@latest
 Run the example:
 
 ```bash
-go run ./example/echo
+go run ./examples/echo
 ```
 
 Use `-tags "security"` only when running the security variant:
 
 ```bash
-go run -tags "security" ./example/echo
+go run -tags "security" ./examples/echo
 ```
 
 Open Swagger UI:
@@ -41,7 +41,7 @@ import (
     echolib "github.com/labstack/echo/v4"
     echoadapter "github.com/aizacoders/openapigo/adapters/echo"
     "github.com/aizacoders/openapigo/openapi"
-    "github.com/aizacoders/openapigo/openapi/simple"
+    "github.com/aizacoders/openapigo/openapi/oas"
 )
 ```
 
@@ -49,7 +49,7 @@ import (
 
 ```go
 base := echolib.New()
-adapter := echoadapter.NewFromEcho(base)
+adapter := echoadapter.NewEchoAdapters(base)
 ```
 
 3) Build Spec with `simple.NewSpec()` (group routes, define Req/Res and multipart)
@@ -81,5 +81,10 @@ adapter.Echo.Start(":8080")
 
 6) Notes
 
-- `NewFromEcho` lets you create middleware and configure the Echo instance before wrapping it with the adapter.
+- `NewEchoAdapters` lets you create middleware and configure the Echo instance before wrapping it with the adapter.
 - Use `MultipartUpload` in the Spec builder to expose file upload inputs in Swagger UI.
+
+### Note about core router
+
+The OpenAPIGO core router is a lightweight net/http-backed mux. Adapter packages (including Echo) integrate with this core behavior and continue to work as before. If you use the `httprouter` adapter you can optionally mount the router automatically onto a `*http.ServeMux` by calling `httprouter.New(mux)`.
+

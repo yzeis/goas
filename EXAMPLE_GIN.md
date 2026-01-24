@@ -13,13 +13,13 @@ go get github.com/gin-gonic/gin@latest
 Run the example:
 
 ```bash
-go run ./example/gin
+go run ./examples/gin
 ```
 
 Use `-tags "security"` only when running the security variant:
 
 ```bash
-go run -tags "security" ./example/gin
+go run -tags "security" ./examples/gin
 ```
 
 Open Swagger UI:
@@ -43,7 +43,7 @@ import (
     ginlib "github.com/gin-gonic/gin"
     ginadapter "github.com/aizacoders/openapigo/adapters/gin"
     "github.com/aizacoders/openapigo/openapi"
-    "github.com/aizacoders/openapigo/openapi/simple"
+    "github.com/aizacoders/openapigo/openapi/oas"
 )
 ```
 
@@ -56,7 +56,7 @@ engine := ginlib.Default()      // or ginlib.New()
 3) Wrap the engine with the adapter so OpenAPIGO can capture route metadata
 
 ```go
-adapter := ginadapter.NewFromEngine(engine)
+adapter := ginadapter.NewGinAdapters(engine)
 ```
 
 4) Build your Spec using the simple builder (grouping + tags)
@@ -119,7 +119,7 @@ cfg := openapi.Config{Title: "API", Version: "1.0.0", SecuritySchemes: map[strin
 
 9) Troubleshooting
 
-- If you get type errors around New/NewFromEngine: make sure you import Gin framework (github.com/gin-gonic/gin) and adapter package separately (use aliases to avoid name collisions: `ginlib` vs `ginadapter`).
+- If you get type errors around constructors: make sure you import Gin framework (github.com/gin-gonic/gin) and the adapter package separately (use aliases to avoid name collisions: `ginlib` vs `ginadapter`).
 - If Swagger UI doesn't show request/response schemas: ensure you declared Req/Res in the Spec builder; `simple` injects those into routes.
 
 ---
@@ -129,3 +129,7 @@ cfg := openapi.Config{Title: "API", Version: "1.0.0", SecuritySchemes: map[strin
 - `example/gin/main.go` — demonstrates wrapping an existing engine and registering OpenAPI
 - `example/gin/routes.go` — shows clean route declarations
 - `openapi/simple` — the spec builder API used to declare schemas and responses
+
+### Note about core router
+
+The OpenAPIGO core router is a lightweight net/http-backed mux. The Gin adapter continues to work unchanged. For the net/http example you can mount the router on a ServeMux easily (the `httprouter` adapter supports `httprouter.New(mux)` to auto-mount).

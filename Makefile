@@ -50,28 +50,28 @@ tidy:
 
 # --- net/http examples ---
 run-httprouter:
-	$(GO) run ./example/httprouter
+	$(GO) run ./examples/httprouter
 
 run-httprouter-security:
-	$(GO) run -tags security ./example/httprouter
+	$(GO) run -tags security ./examples/httprouter
 
 # --- Gin examples ---
 run-gin:
-	$(GO) run -tags gin ./example/gin
+	$(GO) run -tags gin ./examples/gin
 
 run-gin-security:
-	$(GO) run -tags "gin,security" ./example/gin
+	$(GO) run -tags "gin,security" ./examples/gin
 
 # --- Echo examples ---
 run-echo:
-	$(GO) run -tags echo ./example/echo
+	$(GO) run -tags echo ./examples/echo
 
 run-echo-security:
-	$(GO) run -tags "echo,security" ./example/echo
+	$(GO) run -tags "echo,security" ./examples/echo
 
 # --- Fiber examples ---
 run-fiber:
-	$(GO) run -tags fiber ./example/fiber
+	$(GO) run -tags fiber ./examples/fiber
 
 run-fiber-security:
-	$(GO) run -tags "fiber,security" ./example/fiber
+	$(GO) run -tags "fiber,security" ./examples/fiber

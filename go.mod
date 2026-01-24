@@ -5,7 +5,6 @@ go 1.25.5
 require (
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/gin-gonic/gin v1.11.0
-	github.com/go-chi/chi/v5 v5.2.4
 	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/labstack/echo/v4 v4.15.0
 )
