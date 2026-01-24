@@ -174,7 +174,7 @@ func api2GetUser(w http.ResponseWriter, req *http.Request) {
 	_ = json.NewEncoder(w).Encode(User{ID: id, Name: "API2 User"})
 }
 
-// openapiSpec builds the OpenAPI spec for the example (keeps main() clean),
+// openapiSpec builds the OpenAPI spec for the examples (keeps main() clean),
 // includes both API v1.0 and v2.0 groups to mirror the routes in main().
 func openapiSpec() simple.Spec {
 	b := simple.NewSpec()

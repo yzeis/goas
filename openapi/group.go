@@ -27,7 +27,7 @@ type Group struct {
 
 // NewGroup constructs a Group with the provided prefix, options and a custom
 // route function. Useful for adapters or wrappers that need the group's
-// routing to call a specific handler registration function (for example,
+// routing to call a specific handler registration function (for examples,
 // simple.Router wants to ensure route registrations go through its Handle
 // method so spec injection happens correctly).
 func NewGroup(prefix string, opts []HandlerOption, route func(method, path string, h http.HandlerFunc, opts ...HandlerOption)) *Group {

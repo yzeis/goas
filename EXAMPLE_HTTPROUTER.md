@@ -7,13 +7,13 @@ The "default" router in this repo is `openapi.Router` (a lightweight net/http-ba
 Run the example:
 
 ```bash
-go run ./example/httprouter
+go run ./examples/httprouter
 ```
 
 Use `-tags "security"` only when running the security variant:
 
 ```bash
-go run -tags "security" ./example/httprouter
+go run -tags "security" ./examples/httprouter
 ```
 
 Open Swagger UI:
@@ -56,7 +56,7 @@ b := simple.NewSpec()
 b.GroupTags("/", []string{"Users"}, func(s *simple.SpecBuilder) {
     s.GET("/users").Res([]User{}).OK()
     s.POST("/users").Req(CreateUser{}).Res(User{}).Created()
-    // multipart upload example
+    // multipart upload examples
     s.POST("/users/upload").MultipartUpload("file", openapi.MultipartField{Name: "note", Type: openapi.ParamString}).Res(map[string]string{}).OK()
 })
 spec := b.Spec()

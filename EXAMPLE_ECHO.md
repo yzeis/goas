@@ -13,13 +13,13 @@ go get github.com/labstack/echo/v4@latest
 Run the example:
 
 ```bash
-go run ./example/echo
+go run ./examples/echo
 ```
 
 Use `-tags "security"` only when running the security variant:
 
 ```bash
-go run -tags "security" ./example/echo
+go run -tags "security" ./examples/echo
 ```
 
 Open Swagger UI:

@@ -13,13 +13,13 @@ go get github.com/gofiber/fiber/v2@latest
 Run the example:
 
 ```bash
-go run ./example/fiber
+go run ./examples/fiber
 ```
 
 Use `-tags "security"` only when running the security variant:
 
 ```bash
-go run -tags "security" ./example/fiber
+go run -tags "security" ./examples/fiber
 ```
 
 Open Swagger UI:

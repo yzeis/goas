@@ -13,13 +13,13 @@ go get github.com/gin-gonic/gin@latest
 Run the example:
 
 ```bash
-go run ./example/gin
+go run ./examples/gin
 ```
 
 Use `-tags "security"` only when running the security variant:
 
 ```bash
-go run -tags "security" ./example/gin
+go run -tags "security" ./examples/gin
 ```
 
 Open Swagger UI:
