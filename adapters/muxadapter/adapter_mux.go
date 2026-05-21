@@ -28,6 +28,30 @@ func New(mux ...*http.ServeMux) *Router {
 	return r
 }
 
+// Docs mounts OpenAPI JSON and Swagger UI for a net/http OpenAPIGO router.
+func Docs(r *Router, cfg openapi.Config) {
+	if r == nil {
+		return
+	}
+	r.Docs(cfg)
+}
+
+// AutoDocs is an alias for Docs.
+func AutoDocs(r *Router, cfg openapi.Config) {
+	Docs(r, cfg)
+}
+
+// Mount creates an OpenAPIGO router, mounts it on mux, and registers docs.
+// Use this for a Springdoc-like setup with net/http:
+//
+//	r := muxadapter.Mount(mux, openapi.Config{Title: "API", Version: "1.0.0"})
+//	r.GET("/users", listUsers)
+func Mount(mux *http.ServeMux, cfg openapi.Config) *Router {
+	r := New(mux)
+	r.Docs(cfg)
+	return r
+}
+
 // HandlerOption Re-export route options for convenience.
 type HandlerOption = openapi.HandlerOption
 

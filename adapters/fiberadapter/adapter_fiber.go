@@ -99,9 +99,19 @@ func (r *Router) Docs(cfg openapi.Config) {
 	Register(r, cfg)
 }
 
-func Register(r *Router, cfg openapi.Config) {
-	doc := openapi.BuildSpec(r.routes, cfg)
+// Docs mounts OpenAPI JSON and Swagger UI for a native Fiber app.
+// It discovers routes registered directly on Fiber, so you can use plain Fiber
+// routing and add OpenAPIGO with a single call.
+func Docs(app *fiberlib.App, cfg openapi.Config) {
+	Wrap(app).Docs(cfg)
+}
 
+// AutoDocs is an alias for Docs.
+func AutoDocs(app *fiberlib.App, cfg openapi.Config) {
+	Docs(app, cfg)
+}
+
+func Register(r *Router, cfg openapi.Config) {
 	specPath := cfg.SpecPath
 	if specPath == "" {
 		specPath = "/openapi.json"
@@ -114,6 +124,7 @@ func Register(r *Router, cfg openapi.Config) {
 	indexPath := mount + "/index.html"
 
 	r.App.Get(specPath, func(c *fiberlib.Ctx) error {
+		doc := openapi.BuildSpec(r.discoveredRoutes(specPath, mount, indexPath), cfg)
 		return c.Status(200).JSON(doc)
 	})
 
@@ -132,6 +143,35 @@ func Register(r *Router, cfg openapi.Config) {
 	// Legacy /swagger redirect
 	r.App.Get("/swagger", redirect)
 	r.App.Get("/swagger/", redirect)
+}
+
+func (r *Router) discoveredRoutes(specPath, mount, indexPath string) []openapi.RouteMeta {
+	routes := append([]openapi.RouteMeta(nil), r.routes...)
+	seen := map[string]bool{}
+	for _, route := range routes {
+		seen[route.Method+" "+route.Path] = true
+	}
+	for _, route := range r.App.GetRoutes(true) {
+		if skipDocsRoute(route.Path, specPath, mount, indexPath) {
+			continue
+		}
+		key := route.Method + " " + route.Path
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		routes = append(routes, openapi.RouteMeta{Method: route.Method, Path: route.Path})
+	}
+	return routes
+}
+
+func skipDocsRoute(routePath, specPath, mount, indexPath string) bool {
+	switch routePath {
+	case specPath, mount, mount + "/", indexPath, "/swagger", "/swagger/":
+		return true
+	default:
+		return false
+	}
 }
 
 func Bind(c *fiberlib.Ctx, v interface{}) error           { return c.BodyParser(v) }

@@ -174,10 +174,20 @@ func (r *Router) Docs(cfg openapi.Config) {
 	Register(r, cfg)
 }
 
+// Docs mounts OpenAPI JSON and Swagger UI for a native Gin engine.
+// It discovers routes registered directly on the engine, so you can use plain
+// Gin routing and add OpenAPIGO with a single call.
+func Docs(engine *ginlib.Engine, cfg openapi.Config) {
+	Wrap(engine).Docs(cfg)
+}
+
+// AutoDocs is an alias for Docs.
+func AutoDocs(engine *ginlib.Engine, cfg openapi.Config) {
+	Docs(engine, cfg)
+}
+
 // Register mounts /openapi.json and Swagger UI and uses captured routes.
 func Register(r *Router, cfg openapi.Config) {
-	doc := openapi.BuildSpec(r.routes, cfg)
-
 	specPath := cfg.SpecPath
 	if specPath == "" {
 		specPath = "/openapi.json"
@@ -191,6 +201,7 @@ func Register(r *Router, cfg openapi.Config) {
 	indexPath := mount + "/index.html"
 
 	r.Engine.GET(specPath, func(c *ginlib.Context) {
+		doc := openapi.BuildSpec(r.discoveredRoutes(specPath, mount, indexPath), cfg)
 		c.Header("Content-Type", "application/json")
 		c.JSON(200, doc)
 	})
@@ -210,6 +221,35 @@ func Register(r *Router, cfg openapi.Config) {
 	// Legacy /swagger redirect
 	r.Engine.GET("/swagger", redirect)
 	r.Engine.GET("/swagger/", redirect)
+}
+
+func (r *Router) discoveredRoutes(specPath, mount, indexPath string) []openapi.RouteMeta {
+	routes := append([]openapi.RouteMeta(nil), r.routes...)
+	seen := map[string]bool{}
+	for _, route := range routes {
+		seen[route.Method+" "+route.Path] = true
+	}
+	for _, route := range r.Engine.Routes() {
+		if skipDocsRoute(route.Path, specPath, mount, indexPath) {
+			continue
+		}
+		key := route.Method + " " + route.Path
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		routes = append(routes, openapi.RouteMeta{Method: route.Method, Path: route.Path})
+	}
+	return routes
+}
+
+func skipDocsRoute(routePath, specPath, mount, indexPath string) bool {
+	switch routePath {
+	case specPath, mount, mount + "/", indexPath, "/swagger", "/swagger/":
+		return true
+	default:
+		return false
+	}
 }
 
 // Helpers for gin

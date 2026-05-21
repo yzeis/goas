@@ -58,11 +58,10 @@ func Register(r *Router, cfg Config) {
 		cfg.SwaggerPath = "/swagger-ui"
 	}
 
-	doc := BuildSpec(r.Routes(), cfg)
-
 	// Serve OpenAPI JSON
 	// Use Router.Get so we don't depend on underlying mux implementation details.
 	r.Get(cfg.SpecPath, func(w http.ResponseWriter, _ *http.Request) {
+		doc := BuildSpec(r.Routes(), cfg)
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(doc)
 	})

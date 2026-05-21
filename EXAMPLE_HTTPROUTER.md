@@ -46,6 +46,13 @@ mux := http.NewServeMux()
 r := muxadapter.New(mux)
 ```
 
+For a one-call docs mount, use:
+
+```go
+mux := http.NewServeMux()
+r := muxadapter.Mount(mux, openapi.Config{Title: "User API", Version: "1.0.0"})
+```
+
 3) Register handlers using route options
 
 ```go
@@ -72,7 +79,7 @@ r.POST("/users/upload", uploadUserFile,
 4) Mount OpenAPI JSON + Swagger UI on the router and run
 
 ```go
-r.Docs(openapi.Config{Title: "User API", Version: "1.0.0"})
+r.Docs(openapi.Config{Title: "User API", Version: "1.0.0"}) // skip this if you used muxadapter.Mount
 _ = http.ListenAndServe(":8080", mux)
 ```
 
@@ -89,3 +96,4 @@ _ = http.ListenAndServe(":8080", mux)
 ## Notes
 
 - Examples follow the pattern: build a router/engine, register routes with short OpenAPI options, call `Docs(...)`, then run.
+- `http.ServeMux` itself does not expose registered route metadata, so auto docs work for routes registered on the returned `muxadapter.Router`.

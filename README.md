@@ -112,6 +112,62 @@ base.Docs()
 
 ---
 
+## Springdoc-like mode
+
+For Gin, Echo, and Fiber, you can register routes with the framework directly and
+add OpenAPIGO with one docs call. OpenAPIGO discovers method/path information from
+the framework router and mounts Swagger UI.
+
+```go
+engine := gin.Default()
+
+engine.GET("/users/:id", getUser)
+engine.POST("/users", createUser)
+
+ginadapter.Docs(engine, openapi.Config{
+	Title:   "User API",
+	Version: "1.0.0",
+})
+
+_ = engine.Run(":8080")
+```
+
+This zero-config mode documents paths, methods, path params, and default
+responses. Go handlers do not expose request/response body types at runtime, so
+body schemas are intentionally opt-in:
+
+```go
+r := ginadapter.Wrap(engine)
+r.POST("/users", createUser,
+	ginadapter.Req(CreateUser{}),
+	ginadapter.Res(User{}),
+	ginadapter.Created(),
+)
+r.Docs(openapi.Config{Title: "User API", Version: "1.0.0"})
+```
+
+For the built-in net/http router or `muxadapter`, use `openapi.New(...)` or
+`muxadapter.Mount(...)`:
+
+```go
+mux := http.NewServeMux()
+r := muxadapter.Mount(mux, openapi.Config{
+	Title:   "User API",
+	Version: "1.0.0",
+})
+
+r.GET("/users/{id}", getUser, openapi.Res(User{}), openapi.Tags("Users"))
+
+_ = http.ListenAndServe(":8080", mux)
+```
+
+Note: the standard `http.ServeMux` does not expose registered route metadata, so
+OpenAPIGO can auto-document routes registered through `openapi.Router` or
+`muxadapter.Router`, but not arbitrary handlers registered directly on
+`http.ServeMux`.
+
+---
+
 ## Multipart upload example
 
 On a route:
@@ -265,9 +321,9 @@ handler code clean while still generating OpenAPI and mounting Swagger UI.
 Pattern (recommended):
 
 1. Create your framework engine/app (e.g., `gin`, `echo`, `fiber`).
-2. Wrap it with the adapter `Wrap`/`New` helper (so the adapter captures route metadata).
-3. Register routes with short options like `Res`, `Req`, `Tags`, and `Created`.
-4. Call `Docs(...)` and run the engine/app.
+2. For zero-config route discovery, call `ginadapter.Docs(engine, cfg)`, `echoadapter.Docs(e, cfg)`, or `fiberadapter.Docs(app, cfg)`. For net/http, use `openapi.New(...)` or `muxadapter.Mount(...)`.
+3. If you want body schemas/tags/security, wrap with `Wrap`/`New` and register routes with short options like `Res`, `Req`, `Tags`, and `Created`.
+4. Run the engine/app.
 
 Examples:
 
@@ -320,7 +376,7 @@ r.App.Listen(":8080")
 ```
 
 Notes:
-- The `Wrap` helpers let you keep your preferred engine/app initialization (e.g., `gin.Default()`), while still enabling OpenAPIGO to capture route metadata.
+- The `Docs` helpers discover native framework routes. The `Wrap` helpers add richer per-route metadata when you need schemas, tags, security, or custom responses.
 - If you previously built with `-tags`, adapters are now compiled by default — no need to use build tags to get adapter implementations.
 
 ---
