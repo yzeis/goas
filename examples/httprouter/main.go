@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/yzidev/goas"
-	"github.com/yzidev/goas/adapters/muxadapter"
+	"github.com/yzeis/goas"
+	"github.com/yzeis/goas/adapters/muxadapter"
 )
 
 type User struct {

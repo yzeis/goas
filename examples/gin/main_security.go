@@ -6,7 +6,7 @@ import (
 	"log"
 
 	ginlib "github.com/gin-gonic/gin"
-	"github.com/yzidev/goas/adapters/ginadapter"
+	"github.com/yzeis/goas/adapters/ginadapter"
 )
 
 type SecUser struct {

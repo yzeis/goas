@@ -3,7 +3,7 @@ package muxadapter
 import (
 	"net/http"
 
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 // Router is the default net/http router implementation.

@@ -1,4 +1,4 @@
-module github.com/yzidev/goas
+module github.com/yzeis/goas
 
 go 1.25.5
 

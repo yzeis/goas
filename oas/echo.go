@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	echolib "github.com/labstack/echo/v4"
-	"github.com/yzidev/goas"
-	"github.com/yzidev/goas/adapters/echoadapter"
+	"github.com/yzeis/goas"
+	"github.com/yzeis/goas/adapters/echoadapter"
 )
 
 // EchoRouter wraps the echo adapter Router and injects options from Spec automatically.

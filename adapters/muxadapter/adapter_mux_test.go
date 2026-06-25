@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 func TestHTTPRouterNew(t *testing.T) {

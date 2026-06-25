@@ -5,7 +5,7 @@ package main
 import (
 	ginlib "github.com/gin-gonic/gin"
 
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 // registerRoutes wires the endpoints in a readable and grouped way.

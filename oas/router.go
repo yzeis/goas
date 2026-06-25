@@ -3,7 +3,7 @@ package oas
 import (
 	"net/http"
 
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 // Router wraps an goas.Router and injects options from Spec automatically.

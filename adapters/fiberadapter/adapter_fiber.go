@@ -7,8 +7,8 @@ import (
 	fiberlib "github.com/gofiber/fiber/v2"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/yzidev/goas"
-	"github.com/yzidev/goas/ui"
+	"github.com/yzeis/goas"
+	"github.com/yzeis/goas/ui"
 )
 
 type Router struct {

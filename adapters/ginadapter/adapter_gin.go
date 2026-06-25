@@ -8,8 +8,8 @@ import (
 	ginlib "github.com/gin-gonic/gin"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/yzidev/goas"
-	"github.com/yzidev/goas/ui"
+	"github.com/yzeis/goas"
+	"github.com/yzeis/goas/ui"
 )
 
 // Router wraps gin.Engine and captures route metadata for OpenAPI generation.

@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 // RouteDef is a config-only description of an endpoint.

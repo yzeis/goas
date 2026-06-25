@@ -9,7 +9,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	fiberlib "github.com/gofiber/fiber/v2"
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 func TestFiberNewAndWrap(t *testing.T) {

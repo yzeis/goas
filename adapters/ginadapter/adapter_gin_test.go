@@ -8,7 +8,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	ginlib "github.com/gin-gonic/gin"
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 func TestGinNewAndWrap(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	echolib "github.com/labstack/echo/v4"
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 func TestEchoNewAndWrap(t *testing.T) {

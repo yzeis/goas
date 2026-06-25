@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	echolib "github.com/labstack/echo/v4"
-	"github.com/yzidev/goas/adapters/echoadapter"
+	"github.com/yzeis/goas/adapters/echoadapter"
 
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 type SecUser struct {

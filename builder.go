@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yzidev/goas/infer"
+	"github.com/yzeis/goas/infer"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )

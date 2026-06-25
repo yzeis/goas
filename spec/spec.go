@@ -5,11 +5,11 @@
 package spec
 
 import (
-	"github.com/yzidev/goas"
-	"github.com/yzidev/goas/adapters/echoadapter"
-	"github.com/yzidev/goas/adapters/fiberadapter"
-	"github.com/yzidev/goas/adapters/ginadapter"
-	"github.com/yzidev/goas/oas"
+	"github.com/yzeis/goas"
+	"github.com/yzeis/goas/adapters/echoadapter"
+	"github.com/yzeis/goas/adapters/fiberadapter"
+	"github.com/yzeis/goas/adapters/ginadapter"
+	"github.com/yzeis/goas/oas"
 )
 
 type (

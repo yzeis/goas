@@ -9,8 +9,8 @@ import (
 
 	fiberlib "github.com/gofiber/fiber/v2"
 
-	"github.com/yzidev/goas"
-	"github.com/yzidev/goas/adapters/fiberadapter"
+	"github.com/yzeis/goas"
+	"github.com/yzeis/goas/adapters/fiberadapter"
 )
 
 type SecUser struct {

@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	ginlib "github.com/gin-gonic/gin"
-	"github.com/yzidev/goas"
-	"github.com/yzidev/goas/adapters/ginadapter"
+	"github.com/yzeis/goas"
+	"github.com/yzeis/goas/adapters/ginadapter"
 )
 
 // GinRouter wraps the gin adapter Router and injects options from Spec automatically.

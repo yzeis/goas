@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 type SecUser struct {
