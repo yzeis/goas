@@ -63,7 +63,7 @@ Use `MultipartUpload(...)` to get `multipart/form-data` request bodies and a fil
 ## Installation
 
 ```bash
-go get github.com/yzidev/goas@latest
+go get github.com/yzeis/goas@latest
 ```
 
 ---
