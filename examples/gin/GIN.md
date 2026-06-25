@@ -41,8 +41,8 @@ This section shows how to wire Gin with Goas in your own project.
 ```go
 import (
     ginlib "github.com/gin-gonic/gin"
-    ginadapter "github.com/yzidev/goas/adapters/ginadapter"
-    "github.com/yzidev/goas"
+    ginadapter "github.com/yzeis/goas/adapters/ginadapter"
+    "github.com/yzeis/goas"
 )
 ```
 

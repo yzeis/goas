@@ -34,8 +34,8 @@ This section shows how to wire the default HTTP router with Goas in your project
 import (
     "net/http"
 
-    "github.com/yzidev/goas/adapters/muxadapter"
-    "github.com/yzidev/goas"
+    "github.com/yzeis/goas/adapters/muxadapter"
+    "github.com/yzeis/goas"
 )
 ```
 

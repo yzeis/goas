@@ -1,6 +1,6 @@
 # Goas 
 
-[![CI](https://github.com/yzidev/goas/actions/workflows/ci.yml/badge.svg)](https://github.com/yzidev/goas/actions/workflows/ci.yml)
+[![CI](https://github.com/yzeis/goas/actions/workflows/ci.yml/badge.svg)](https://github.com/yzeis/goas/actions/workflows/ci.yml)
 
 Auto-generate **OpenAPI 3.x** from your Go route registrations.
 
@@ -76,7 +76,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/yzidev/goas"
+	"github.com/yzeis/goas"
 )
 
 type User struct {
@@ -252,7 +252,7 @@ Notes:
 - Adapters are provided as packages under `adapters/*` so you can use them when needed.
   They are compiled by default and no special build tags are required to use them.
   If you prefer to keep adapter dependencies optional for your project, consider
-  shipping adapters as separate modules (e.g. `github.com/yzidev/goas-adapter-gin`) so downstream projects opt-in.
+  shipping adapters as separate modules (e.g. `github.com/yzeis/goas-adapter-gin`) so downstream projects opt-in.
 
 ---
 
@@ -334,8 +334,8 @@ Examples:
 ```go
 import (
     ginlib "github.com/gin-gonic/gin"
-    "github.com/yzidev/goas"
-    "github.com/yzidev/goas/adapters/ginadapter"
+    "github.com/yzeis/goas"
+    "github.com/yzeis/goas/adapters/ginadapter"
 )
 
 engine := ginlib.New()
@@ -349,8 +349,8 @@ engine.Run(":8080")
 ```go
 import (
     echolib "github.com/labstack/echo/v4"
-    "github.com/yzidev/goas"
-    "github.com/yzidev/goas/adapters/echoadapter"
+    "github.com/yzeis/goas"
+    "github.com/yzeis/goas/adapters/echoadapter"
 )
 
 base := echolib.New()
@@ -364,8 +364,8 @@ base.Start(":8080")
 ```go
 import (
     fiberlib "github.com/gofiber/fiber/v2"
-    "github.com/yzidev/goas"
-    "github.com/yzidev/goas/adapters/fiberadapter"
+    "github.com/yzeis/goas"
+    "github.com/yzeis/goas/adapters/fiberadapter"
 )
 
 app := fiberlib.New()
